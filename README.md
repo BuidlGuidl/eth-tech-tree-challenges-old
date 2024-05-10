@@ -1,3 +1,34 @@
+# Wrapped Token Challenge - ETH Tech Tree
+## Contents
+- [Requirements](#requirements)
+- [Start Here](#start-here)
+- [Challenge Description](#challenge-description)
+
+## Requirements
+
+Before you begin, you need to install the following tools:
+
+- [Node (v18 LTS)](https://nodejs.org/en/download/)
+- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
+- [Git](https://git-scm.com/downloads)
+- [Foundryup](https://book.getfoundry.sh/getting-started/installation)
+
+## Start Here
+Run the following commands in your terminal:
+```
+yarn install
+foundryup
+```
+
+## Challenge Description
+This challenge will require you to write a ERC20 compliant token wrapper for ETH. An ERC20 form of ETH is useful because DeFi protocols don't have to worry about integrating special functions for handling native ETH, instead they can just write methods that handle any ERC20 token.
+
+Your task starts in `packages/foundry/contracts/WrappedETH.sol`. Use your solidity skills to make this smart contract receive ETH and give the depositor an equal amount of WETH, an ERC20 version of native ETH. The contract already has all the necessary methods, you will just have to fill in the details on what each method should do.
+
+When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing.
+
+// TODO: Add front end testing support for a more hands on learning approach
+
 # 🏗 Scaffold-ETH 2 - Foundry
 
 🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
