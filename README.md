@@ -31,6 +31,8 @@ Here are some helpful references:
 
 *End of challenge specific section*
 
+**Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
+
 When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing.
 
 For a more "hands on" approach you can try testing your contract with the provided front end interface by running the following:
