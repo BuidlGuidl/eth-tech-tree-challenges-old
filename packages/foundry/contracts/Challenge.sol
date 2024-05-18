@@ -2,83 +2,114 @@
 
 pragma solidity >=0.8.0 <0.9.0;
 
-contract Challenge {
-    ///// Errors /////
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {console} from "forge-std/console.sol";
+
+contract Challenge is Ownable {
+    /***** ERRORS *****/
     error InsufficentFunds();
     error NoActiveStream();
     error NotEnoughStreamUnlocked();
     error TransferFailed();
 
-    ///// Types /////
+    /***** TYPES *****/
     struct StreamConfig {
         uint256 cap;
         uint256 timeOfLastWithdrawal;
     }
 
-    ///// Modifiers /////
-    modifier senderHasStream() {
-        StreamConfig storage builderStream = s_streamRegistry[msg.sender];
+    /***** MODIFIERS *****/
+    modifier hasStream(address account) {
+        StreamConfig storage builderStream = s_streamRegistry[account];
         if (builderStream.cap == 0) revert NoActiveStream();
         _;
     }
 
-    ///// State Variables /////
-    mapping(address => StreamConfig) public s_streamRegistry;
+    /***** STATE VARIABLES *****/
+    mapping(address => StreamConfig) private s_streamRegistry;
     uint256 public immutable i_frequency = 2592000; // How long until stream is fully unlocked after last withdrawal
 
-    ///// Events /////
+    /***** EVENTS *****/
     event Withdraw(address indexed to, uint256 amount);
-    event AddBuilder(address indexed to, uint256 amount);
+    event AddStream(address indexed to, uint256 cap);
 
-    ///// Functions /////
+    /***** FUNCTIONS *****/
     constructor() {}
 
-    ///// External Functions /////
+    /***** EXTERNAL FUNCTIONS *****/
     receive() external payable {}
 
     fallback() external payable {}
 
     /**
-     * @param builder new account allowed allowed to withdraw from a stream
+     * @param account new account allowed allowed to withdraw from a stream
      * @param cap max amount (in wei) that can be withdrawn from stream at a time
+     * Requirements:
+     * - Only owner can add a stream
+     * - Emits a `AddStream` event with the address of the account receiving the stream and the cap amount for the stream
      */
-    function addBuilderStream(address payable builder, uint256 cap) public {
-        s_streamRegistry[builder] = StreamConfig(cap, 0);
-        emit AddBuilder(builder, cap);
+    function addStream(address account, uint256 cap) public onlyOwner {
+        s_streamRegistry[account] = StreamConfig(cap, 0);
+        emit AddStream(account, cap);
     }
 
     /**
-     * Withdraws the maximum amount that can be withdrawn from the stream
-     * @dev Should revert if there is not enough funds in the contract
-     * @dev Should revert if the sender does not have a stream
+     * @dev Withdraws the maximum amount that can be withdrawn from the stream
+     * Requirements:
+     * - Revert if there is not enough funds in the contract
+     * - Revert if the sender does not have a stream
      */
-    function maxWithdraw() public senderHasStream {
-        uint256 maxAmount = unlockedAmount(msg.sender);
-        if (address(this).balance >= maxAmount) revert InsufficentFunds();
+    function maxWithdraw() public hasStream(msg.sender) {
+        uint256 amount = unlockedAmount(msg.sender);
+        if (amount > address(this).balance) revert InsufficentFunds();
 
-        (bool success, ) = msg.sender.call{value: maxAmount}("");
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
         if (!success) revert TransferFailed();
 
         StreamConfig storage builderStream = s_streamRegistry[msg.sender];
         builderStream.timeOfLastWithdrawal = block.timestamp;
 
-        emit Withdraw(msg.sender, maxAmount);
+        emit Withdraw(msg.sender, amount);
     }
 
-    ///// View Functions /////
+    /***** VIEW FUNCTIONS *****/
+
     /**
-     * @param builder account to check unlocked amount
+     * @dev This function calculates the amount that can be withdrawn from a stream at a given time
+     * @param account account to check unlocked amount
      * @return amount in wei that can be withdrawn
+     * Requirements:
+     * - Revert if the account does not have a stream
+     * - Withdraws the full cap amount if the time since the last withdrawal is greater than the frequency
+     * - Withdraws a fraction of the cap amount if the time since the last withdrawal is less than the frequency
      */
     function unlockedAmount(
-        address builder
-    ) public view senderHasStream returns (uint256 amount) {
-        StreamConfig storage builderStream = s_streamRegistry[builder];
+        address account
+    ) public view hasStream(account) returns (uint256 amount) {
+        StreamConfig storage stream = s_streamRegistry[account];
 
+        console.log("block.timestamp: ", block.timestamp);
+        console.log(
+            "stream.timeOfLastWithdrawal: ",
+            stream.timeOfLastWithdrawal
+        );
         uint256 timeSinceLastWithdrawal = block.timestamp -
-            builderStream.timeOfLastWithdrawal;
-        if (timeSinceLastWithdrawal > i_frequency) return builderStream.cap;
+            stream.timeOfLastWithdrawal;
+        if (timeSinceLastWithdrawal > i_frequency) return stream.cap;
 
-        amount = (builderStream.cap * timeSinceLastWithdrawal) / i_frequency;
+        amount = (stream.cap * timeSinceLastWithdrawal) / i_frequency;
+    }
+
+    /**
+     * @dev This is a getter function for the stream registry
+     * @param account account to get stream for
+     * Requirements:
+     * - Revert if the account does not have a stream
+     * - Returns the stream configuration for the given account
+     */
+    function getStream(
+        address account
+    ) public view hasStream(account) returns (StreamConfig memory) {
+        return s_streamRegistry[account];
     }
 }
