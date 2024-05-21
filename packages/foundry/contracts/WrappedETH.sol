@@ -1,19 +1,19 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-contract Challenge {
+contract WrappedETH {
     // ERC20 Standard methods for token metadata
     string public name = "Wrapped Ether";
     string public symbol = "WETH";
     uint8 public decimals = 18;
 
     // ERC20 Standard Interface Events
-    event Approval(address indexed src, address indexed guy, uint wad);
-    event Transfer(address indexed src, address indexed dst, uint wad);
+    event Approval(address indexed source, address indexed deputy, uint amount);
+    event Transfer(address indexed source, address indexed destination, uint amount);
 
     // Non-ERC20 Standard Events - specific to the Wrapped Ether contract
-    event Deposit(address indexed dst, uint wad);
-    event Withdrawal(address indexed src, uint wad);
+    event Deposit(address indexed destination, uint amount);
+    event Withdrawal(address indexed source, uint amount);
 
     // ERC20 Standard Interface mappings
     mapping(address => uint) public balanceOf;
@@ -34,18 +34,18 @@ contract Challenge {
 
     /**
      * @dev Allows the caller to withdraw a specified amount of wrapped Ether (WETH) from their balance.
-     * @param wad The amount of wrapped Ether to withdraw.
+     * @param amount The amount of wrapped Ether to withdraw.
      * Requirements:
-     * - The caller must have a balance of at least `wad` wrapped Ether.
+     * - The caller must have a balance of at least `amount` wrapped Ether.
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
-    function withdraw(uint wad) public {
-        require(balanceOf[msg.sender] >= wad);
-        balanceOf[msg.sender] -= wad;
-        (bool sent, ) = msg.sender.call{value: wad}("");
+    function withdraw(uint amount) public {
+        require(balanceOf[msg.sender] >= amount);
+        balanceOf[msg.sender] -= amount;
+        (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "Failed to send Ether");
-        emit Withdrawal(msg.sender, wad);
+        emit Withdrawal(msg.sender, amount);
     }
 
     /**
@@ -62,49 +62,49 @@ contract Challenge {
     /**
      * @dev Part of the ERC20 Standard Interface.
      * @dev Approves the specified address to spend the caller's tokens.
-     * @param guy The address to be approved.
-     * @param wad The amount of tokens to be approved.
+     * @param deputy The address to be approved.
+     * @param amount The amount of tokens to be approved.
      * @return boolean value indicating whether the approval was successful or not.
      * Requirements:
      * - The caller sets the allowance of the specified address to the specified amount of tokens.
      * - Emits an `Approval` event with the caller's address, the approved address, and the amount of tokens approved.
      */
-    function approve(address guy, uint wad) public returns (bool) {
-        allowance[msg.sender][guy] = wad;
-        emit Approval(msg.sender, guy, wad);
+    function approve(address deputy, uint amount) public returns (bool) {
+        allowance[msg.sender][deputy] = amount;
+        emit Approval(msg.sender, deputy, amount);
         return true;
     }
 
     /**
      * @dev Part of the ERC20 Standard Interface.
      * @dev Transfers a specified amount of wrapped ETH tokens from the source address to the destination address.
-     * @param src The address to transfer the tokens from.
-     * @param dst The address to transfer the tokens to. dst == destination
-     * @param wad The amount of tokens to transfer.
+     * @param source The address to transfer the tokens from.
+     * @param destination The address to transfer the tokens to. destination == destination
+     * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The source address must have a balance of at least `wad` tokens.
-     * - The source address must have approved the caller to spend at least `wad` tokens.
+     * - The source address must have a balance of at least `amount` tokens.
+     * - The source address must have approved the caller to spend at least `amount` tokens.
      * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
      */
     function transferFrom(
-        address src,
-        address dst,
-        uint wad
+        address source,
+        address destination,
+        uint amount
     ) public returns (bool) {
-        require(balanceOf[src] >= wad);
+        require(balanceOf[source] >= amount);
 
         if (
-            src != msg.sender && allowance[src][msg.sender] != type(uint256).max
+            source != msg.sender && allowance[source][msg.sender] != type(uint256).max
         ) {
-            require(allowance[src][msg.sender] >= wad);
-            allowance[src][msg.sender] -= wad;
+            require(allowance[source][msg.sender] >= amount);
+            allowance[source][msg.sender] -= amount;
         }
 
-        balanceOf[src] -= wad;
-        balanceOf[dst] += wad;
+        balanceOf[source] -= amount;
+        balanceOf[destination] += amount;
 
-        emit Transfer(src, dst, wad);
+        emit Transfer(source, destination, amount);
 
         return true;
     }
@@ -112,15 +112,15 @@ contract Challenge {
     /**
      * @dev Part of the ERC20 Standard Interface.
      * @dev Transfers a specified amount of wrapped ETH tokens from the caller's address to the destination address.
-     * @param dst The address to transfer the tokens to. dst == destination
-     * @param wad The amount of tokens to transfer.
+     * @param destination The address to transfer the tokens to. destination == destination
+     * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The caller must have a balance of at least `wad` tokens.
+     * - The caller must have a balance of at least `amount` tokens.
      * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
      */
-    function transfer(address dst, uint wad) public returns (bool) {
-        return transferFrom(msg.sender, dst, wad);
+    function transfer(address destination, uint amount) public returns (bool) {
+        return transferFrom(msg.sender, destination, amount);
     }
 
     /**

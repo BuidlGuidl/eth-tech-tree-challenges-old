@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../contracts/Challenge.sol";
+import "../contracts/WrappedETH.sol";
 
-contract ChallengeTest is Test {
-    Challenge public wrappedETH;
+contract WrappedETHTest is Test {
+    WrappedETH public wrappedETH;
     address public userOne = address(0x123);
 
     function setUp() public {
-        wrappedETH = new Challenge();
+        wrappedETH = new WrappedETH();
     }
 
     function testDeposit() public {
@@ -112,5 +112,42 @@ contract ChallengeTest is Test {
         wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
         assertEq(wrappedETH.balanceOf(address(this)), 0);
         assertEq(wrappedETH.balanceOf(vm.addr(2)), 1000);
+    }
+
+    function testEmitDepositEvent() public {
+        vm.expectEmit(address(wrappedETH));
+        emit WrappedETH.Deposit(address(this), 1000);
+        wrappedETH.deposit{value: 1000}();
+    }
+
+    function testEmitWithdrawalEvent() public {
+        vm.deal(userOne, 1000);
+        vm.startPrank(userOne);
+        wrappedETH.deposit{value: 1000}();
+        vm.expectEmit(address(wrappedETH));
+        emit WrappedETH.Withdrawal(userOne, 1000);
+        wrappedETH.withdraw(1000);
+    }
+
+    function testEmitTransferEvent() public {
+        wrappedETH.deposit{value: 1000}();
+        vm.expectEmit(address(wrappedETH));
+        emit WrappedETH.Transfer(address(this), vm.addr(2), 1000);
+        wrappedETH.transfer(vm.addr(2), 1000);
+    }
+
+    function testEmitApprovalEvent() public {
+        vm.expectEmit(address(wrappedETH));
+        emit WrappedETH.Approval(address(this), vm.addr(2), 1000);
+        wrappedETH.approve(vm.addr(2), 1000);
+    }
+
+    function testEmitTransferEventOnTransferFrom() public {
+        wrappedETH.deposit{value: 1000}();
+        wrappedETH.approve(vm.addr(2), 1000);
+        vm.expectEmit(address(wrappedETH));
+        emit WrappedETH.Transfer(address(this), vm.addr(2), 1000);
+        vm.startPrank(vm.addr(2));
+        wrappedETH.transferFrom(address(this),vm.addr(2), 1000);
     }
 }
