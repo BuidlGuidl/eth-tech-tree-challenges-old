@@ -2,18 +2,15 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Challenge} from "contracts/Challenge.sol";
+import {EthAndTokenStreaming} from "contracts/EthAndTokenStreaming.sol";
 
-contract ChallengeTest is Test {
-    Challenge challenge;
+contract EthAndTokenStreamingTest is Test {
+    EthAndTokenStreaming challenge;
     address public ALICE = makeAddr("alice");
     address public BOB = makeAddr("bob");
     uint256 public STREAM_CAP = 0.5 ether;
     uint256 public FREQUENCY = 2592000; // 30 days
     uint256 public STARTING_TIMESTAMP = 42000000069;
-
-    event Withdraw(address indexed to, uint256 amount);
-    event AddStream(address indexed to, uint256 amount);
 
     /**
      * Setup function is invoked before each test case is run to reduce redundancy
@@ -21,7 +18,7 @@ contract ChallengeTest is Test {
      */
     function setUp() public {
         // Deploy the contract
-        challenge = new Challenge();
+        challenge = new EthAndTokenStreaming();
         // Fund the contract
         (bool success, ) = payable(challenge).call{value: 10 ether}("");
         require(success, "Failed to send ether to challenge contract");
@@ -61,9 +58,11 @@ contract ChallengeTest is Test {
      */
     function testOwnerCanAddStream() public {
         vm.expectEmit(true, false, false, true);
-        emit AddStream(ALICE, STREAM_CAP);
+        emit EthAndTokenStreaming.AddStream(ALICE, STREAM_CAP);
         challenge.addStream(ALICE, STREAM_CAP);
-        Challenge.StreamConfig memory stream = challenge.getStream(ALICE);
+        EthAndTokenStreaming.StreamConfig memory stream = challenge.getStream(
+            ALICE
+        );
         assertEq(stream.cap, STREAM_CAP);
         assertEq(stream.timeOfLastWithdrawal, 0); // stream has not been withdrawn from yet
     }
@@ -73,7 +72,7 @@ contract ChallengeTest is Test {
      */
     function testInvalidAccountCannotWithdraw() public {
         vm.prank(BOB);
-        vm.expectRevert(Challenge.NoActiveStream.selector);
+        vm.expectRevert(EthAndTokenStreaming.NoActiveStream.selector);
         challenge.maxWithdraw();
     }
 
@@ -83,7 +82,7 @@ contract ChallengeTest is Test {
     function testValidAccountCanMaxWithdraw() public {
         vm.prank(ALICE);
         vm.expectEmit(true, false, false, true);
-        emit Withdraw(ALICE, STREAM_CAP);
+        emit EthAndTokenStreaming.Withdraw(ALICE, STREAM_CAP);
         challenge.maxWithdraw();
         uint256 aliceBalance = address(ALICE).balance;
         console.log("Alice's balance: ", aliceBalance);
@@ -117,7 +116,7 @@ contract ChallengeTest is Test {
      */
     function testGetStreamForInvalidAccount() public {
         vm.prank(BOB);
-        vm.expectRevert(Challenge.NoActiveStream.selector);
+        vm.expectRevert(EthAndTokenStreaming.NoActiveStream.selector);
         challenge.getStream(BOB);
     }
 
@@ -125,7 +124,9 @@ contract ChallengeTest is Test {
      * Ensure view function returns correct stream config for a valid account
      */
     function testGetStreamForValidAccount() public {
-        Challenge.StreamConfig memory stream = challenge.getStream(ALICE);
+        EthAndTokenStreaming.StreamConfig memory stream = challenge.getStream(
+            ALICE
+        );
         assertEq(stream.cap, STREAM_CAP);
         assertEq(stream.timeOfLastWithdrawal, 0);
     }

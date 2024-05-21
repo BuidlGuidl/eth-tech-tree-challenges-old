@@ -5,7 +5,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {console} from "forge-std/console.sol";
 
-contract Challenge is Ownable {
+contract EthAndTokenStreaming is Ownable {
     /***** ERRORS *****/
     error InsufficentFunds();
     error NoActiveStream();
