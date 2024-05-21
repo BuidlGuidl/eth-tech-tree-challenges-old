@@ -21,19 +21,20 @@ foundryup
 ```
 
 ## Challenge Description
-*Edit this section*
+*--Edit this section--*
 Write challenge description here...
 
 Here are some helpful references:
+*Replace with real resource links if any*
 - [one](buidlguidl.com)
 - [two](buidlguidl.com)
 - [three](buidlguidl.com)
 
-*End of challenge specific section*
+*--End of challenge specific section--*
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
-When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing. You can also use the `--match-test "TestName"` flag to only run a single test. Of course you can chain both to include a higher verbosity and only run a specific test by including both flags `yarn foundry:test -vvvv --match-test "TestName"`.
+When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing. You can also use the `--match-test "TestName"` flag to only run a single test. Of course you can chain both to include a higher verbosity and only run a specific test by including both flags `yarn foundry:test -vvvv --match-test "TestName"`. You will also see we have included an import of console2.sol which allows you to use `console.log()` type functionality inside your contracts to know what a value is at a specific time of execution. You can read more about how to use that at [FoundryBook](https://book.getfoundry.sh/reference/forge-std/console-log).
 
 For a more "hands on" approach you can try testing your contract with the provided front end interface by running the following:
 ```
