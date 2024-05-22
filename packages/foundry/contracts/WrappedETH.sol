@@ -9,12 +9,12 @@ contract WrappedETH {
     uint8 public decimals = 18;
 
     // ERC20 Standard Interface Events
-    event Approval(address indexed source, address indexed deputy, uint amount);
-    event Transfer(address indexed source, address indexed destination, uint amount);
+    event Approval(address indexed owner, address indexed spender, uint amount);
+    event Transfer(address indexed from, address indexed to, uint amount);
 
     // Non-ERC20 Standard Events - specific to the Wrapped Ether contract
-    event Deposit(address indexed destination, uint amount);
-    event Withdrawal(address indexed source, uint amount);
+    event Deposit(address indexed owner, uint amount);
+    event Withdrawal(address indexed owner, uint amount);
 
     // ERC20 Standard Interface mappings
     mapping(address => uint) public balanceOf;
@@ -63,65 +63,65 @@ contract WrappedETH {
     /**
      * @dev Part of the ERC20 Standard Interface.
      * @dev Approves the specified address to spend the caller's tokens.
-     * @param deputy The address to be approved.
+     * @param spender The address to be approved.
      * @param amount The amount of tokens to be approved.
      * @return boolean value indicating whether the approval was successful or not.
      * Requirements:
      * - The caller sets the allowance of the specified address to the specified amount of tokens.
      * - Emits an `Approval` event with the caller's address, the approved address, and the amount of tokens approved.
      */
-    function approve(address deputy, uint amount) public returns (bool) {
-        allowance[msg.sender][deputy] = amount;
-        emit Approval(msg.sender, deputy, amount);
+    function approve(address spender, uint amount) public returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
         return true;
     }
 
     /**
      * @dev Part of the ERC20 Standard Interface.
-     * @dev Transfers a specified amount of wrapped ETH tokens from the source address to the destination address.
-     * @param source The address to transfer the tokens from.
-     * @param destination The address to transfer the tokens to. destination == destination
+     * @dev Transfers a specified amount of wrapped ETH tokens from the 'from' address to the 'to' address.
+     * @param from The address to transfer the tokens from.
+     * @param to The address to which tokens are to be transferred.
      * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The source address must have a balance of at least `amount` tokens.
-     * - The source address must have approved the caller to spend at least `amount` tokens.
-     * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
+     * - The from address must have a balance of at least `amount` tokens.
+     * - The from address must have approved the caller to spend at least `amount` tokens.
+     * - Emits a `Transfer` event with the caller's address, the to address, and the amount of tokens approved.
      */
     function transferFrom(
-        address source,
-        address destination,
+        address from,
+        address to,
         uint amount
     ) public returns (bool) {
-        require(balanceOf[source] >= amount);
+        require(balanceOf[from] >= amount);
 
         if (
-            source != msg.sender && allowance[source][msg.sender] != type(uint256).max
+            from != msg.sender && allowance[from][msg.sender] != type(uint256).max
         ) {
-            require(allowance[source][msg.sender] >= amount);
-            allowance[source][msg.sender] -= amount;
+            require(allowance[from][msg.sender] >= amount);
+            allowance[from][msg.sender] -= amount;
         }
 
-        balanceOf[source] -= amount;
-        balanceOf[destination] += amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
 
-        emit Transfer(source, destination, amount);
+        emit Transfer(from, to, amount);
 
         return true;
     }
 
     /**
      * @dev Part of the ERC20 Standard Interface.
-     * @dev Transfers a specified amount of wrapped ETH tokens from the caller's address to the destination address.
-     * @param destination The address to transfer the tokens to. destination == destination
+     * @dev Transfers a specified amount of wrapped ETH tokens from the caller's address to the to address.
+     * @param to The address to transfer the tokens to. to == to
      * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
      * - The caller must have a balance of at least `amount` tokens.
      * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
      */
-    function transfer(address destination, uint amount) public returns (bool) {
-        return transferFrom(msg.sender, destination, amount);
+    function transfer(address to, uint amount) public returns (bool) {
+        return transferFrom(msg.sender, to, amount);
     }
 
     /**
