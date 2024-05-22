@@ -6,148 +6,150 @@ import "../contracts/WrappedETH.sol";
 
 contract WrappedETHTest is Test {
     WrappedETH public wrappedETH;
-    address public userOne = address(0x123);
+    address THIS_CONTRACT = address(this);
+    address NON_CONTRACT_USER = vm.addr(1);
+    uint ONE_THOUSAND = 1000 wei;
 
     function setUp() public {
         wrappedETH = new WrappedETH();
     }
 
     function testDeposit() public {
-        wrappedETH.deposit{value: 1000}();
-        assertEq(wrappedETH.balanceOf(address(this)), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
     }
 
     function testFallback() public {
-        address(wrappedETH).call{value: 1000}("");
-        assertEq(wrappedETH.balanceOf(address(this)), 1000);
+        address(wrappedETH).call{value: ONE_THOUSAND}("");
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
     }
 
     function testWithdraw() public {
-        vm.startPrank(userOne);
-        vm.deal(userOne, 1000);
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.withdraw(1000);
-        assertEq(wrappedETH.balanceOf(userOne), 0);
+        vm.startPrank(NON_CONTRACT_USER);
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.withdraw(ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
         assertEq(wrappedETH.balanceOf(address(wrappedETH)), 0);
-        assertEq(userOne.balance, 1000);
+        assertEq(NON_CONTRACT_USER.balance, ONE_THOUSAND);
     }
 
     function testTotalSupply() public {
-        wrappedETH.deposit{value: 1000}();
-        assertEq(wrappedETH.totalSupply(), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        assertEq(wrappedETH.totalSupply(), ONE_THOUSAND);
     }
 
     function testApprove() public {
-        wrappedETH.approve(vm.addr(2), 1000);
-        assertEq(wrappedETH.allowance(address(this), vm.addr(2)), 1000);
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.allowance(THIS_CONTRACT, NON_CONTRACT_USER), ONE_THOUSAND);
     }
 
     function testTransfer() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.transfer(vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 0);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.transfer(NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 0);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), ONE_THOUSAND);
     }
 
     function testTransferWithInsufficientBalance() public {
         wrappedETH.deposit{value: 999}();
         vm.expectRevert();
-        wrappedETH.transfer(vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 999);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 0);
+        wrappedETH.transfer(NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 999);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
     }
 
     function testTransferFrom() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.approve(vm.addr(2), 1000);
-        vm.startPrank(vm.addr(2));
-        wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 0);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 0);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), ONE_THOUSAND);
     }
 
     function testTransferFromAllowanceIsAdjusted() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.approve(vm.addr(2), 1000);
-        vm.startPrank(vm.addr(2));
-        wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 0);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 1000);
-        assertEq(wrappedETH.allowance(address(this), vm.addr(2)), 0);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 0);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), ONE_THOUSAND);
+        assertEq(wrappedETH.allowance(THIS_CONTRACT, NON_CONTRACT_USER), 0);
     }
 
     function testTransferFromWithoutAllowance() public {
-        wrappedETH.deposit{value: 1000}();
-        vm.startPrank(vm.addr(2));
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        vm.startPrank(NON_CONTRACT_USER);
         vm.expectRevert();
-        wrappedETH.transferFrom(vm.addr(1), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 1000);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 0);
+        wrappedETH.transferFrom(vm.addr(1), NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
     }
 
     function testTransferFromWithInsufficientAllowance() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.approve(vm.addr(2), 500);
-        vm.startPrank(vm.addr(2));
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.approve(NON_CONTRACT_USER, 500);
+        vm.startPrank(NON_CONTRACT_USER);
         vm.expectRevert();
-        wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 1000);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 0);
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
     }
 
     function testTransferFromWithInsufficientBalance() public {
         wrappedETH.deposit{value: 500}();
-        wrappedETH.approve(vm.addr(2), 1000);
-        vm.startPrank(vm.addr(2));
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
         vm.expectRevert();
-        wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 500);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 0);
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 500);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
     }
 
     function testTransferFromWithMaxAllowance() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.approve(vm.addr(2), type(uint256).max);
-        vm.startPrank(vm.addr(2));
-        wrappedETH.transferFrom(address(this), vm.addr(2), 1000);
-        assertEq(wrappedETH.balanceOf(address(this)), 0);
-        assertEq(wrappedETH.balanceOf(vm.addr(2)), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.approve(NON_CONTRACT_USER, type(uint256).max);
+        vm.startPrank(NON_CONTRACT_USER);
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 0);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), ONE_THOUSAND);
     }
 
     function testEmitDepositEvent() public {
         vm.expectEmit(address(wrappedETH));
-        emit WrappedETH.Deposit(address(this), 1000);
-        wrappedETH.deposit{value: 1000}();
+        emit WrappedETH.Deposit(THIS_CONTRACT, ONE_THOUSAND);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
     }
 
     function testEmitWithdrawalEvent() public {
-        vm.deal(userOne, 1000);
-        vm.startPrank(userOne);
-        wrappedETH.deposit{value: 1000}();
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
         vm.expectEmit(address(wrappedETH));
-        emit WrappedETH.Withdrawal(userOne, 1000);
-        wrappedETH.withdraw(1000);
+        emit WrappedETH.Withdrawal(NON_CONTRACT_USER, ONE_THOUSAND);
+        wrappedETH.withdraw(ONE_THOUSAND);
     }
 
     function testEmitTransferEvent() public {
-        wrappedETH.deposit{value: 1000}();
+        wrappedETH.deposit{value: ONE_THOUSAND}();
         vm.expectEmit(address(wrappedETH));
-        emit WrappedETH.Transfer(address(this), vm.addr(2), 1000);
-        wrappedETH.transfer(vm.addr(2), 1000);
+        emit WrappedETH.Transfer(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        wrappedETH.transfer(NON_CONTRACT_USER, ONE_THOUSAND);
     }
 
     function testEmitApprovalEvent() public {
         vm.expectEmit(address(wrappedETH));
-        emit WrappedETH.Approval(address(this), vm.addr(2), 1000);
-        wrappedETH.approve(vm.addr(2), 1000);
+        emit WrappedETH.Approval(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
     }
 
     function testEmitTransferEventOnTransferFrom() public {
-        wrappedETH.deposit{value: 1000}();
-        wrappedETH.approve(vm.addr(2), 1000);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
         vm.expectEmit(address(wrappedETH));
-        emit WrappedETH.Transfer(address(this), vm.addr(2), 1000);
-        vm.startPrank(vm.addr(2));
-        wrappedETH.transferFrom(address(this),vm.addr(2), 1000);
+        emit WrappedETH.Transfer(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
+        wrappedETH.transferFrom(THIS_CONTRACT,NON_CONTRACT_USER, ONE_THOUSAND);
     }
 }
