@@ -1,5 +1,7 @@
 # Template For Challenge - ETH Tech Tree
+
 ## Contents
+
 - [Requirements](#requirements)
 - [Start Here](#start-here)
 - [Challenge Description](#challenge-description)
@@ -14,36 +16,50 @@ Before you begin, you need to install the following tools:
 - [Foundryup](https://book.getfoundry.sh/getting-started/installation)
 
 ## Start Here
+
 Run the following commands in your terminal:
+
 ```
 yarn install
 foundryup
 ```
 
 ## Challenge Description
-*Edit this section*
-Write challenge description here...
+
+##### Objective:
+
+In this challenge, you will create a smart contract that implements a "Dead Man's Switch". This contract allows users to deposit funds (ETH or other tokens) and set a time interval for regular "check-ins". If the user fails to check in within the specified time frame, designated beneficiaries can withdraw the funds.
+
+##### Scenario:
+
+Imagine you want to ensure that your funds are securely passed on to your loved ones or trusted parties if something happens to you and you can no longer interact with the contract. This "Dead Man's Switch" will automate this process based on your predefined conditions.
 
 Here are some helpful references:
+
 - [one](buidlguidl.com)
 - [two](buidlguidl.com)
 - [three](buidlguidl.com)
 
-*End of challenge specific section*
+_End of challenge specific section_
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
 When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing.
 
 For a more "hands on" approach you can try testing your contract with the provided front end interface by running the following:
+
 ```
 yarn chain
 ```
+
 in a second terminal deploy your contract:
+
 ```
 yarn deploy
 ```
+
 in a third terminal start the NextJS front end:
+
 ```
 yarn start
 ```
