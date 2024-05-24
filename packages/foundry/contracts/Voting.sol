@@ -29,7 +29,8 @@ contract Voting {
      * - Set the voting deadline
      */
     constructor(address _tokenAddress, uint256 _votingPeriod) {
-
+        token = IERC20(_tokenAddress);
+        votingDeadline = block.timestamp + _votingPeriod;
     }
 
     /**
@@ -44,6 +45,19 @@ contract Voting {
      * - Emits a `VoteCasted` event.
      */
     function vote(bool support) public {
+        require(block.timestamp < votingDeadline, "Voting has ended");
+        require(!hasVoted[msg.sender], "You have already voted");
+
+        uint256 voterWeight = token.balanceOf(msg.sender);
+        require(voterWeight > 0, "You have no tokens to vote with");
+
+        if (support) {
+            votesFor += voterWeight;
+        } else {
+            votesAgainst += voterWeight;
+        }
+        hasVoted[msg.sender] = true;
+        emit VoteCasted(msg.sender, support, voterWeight);
     }
 
     /**
@@ -54,5 +68,7 @@ contract Voting {
      * - Determine the result based on the majority vote
      */
     function getResult() public view returns (bool) {
+        require(block.timestamp >= votingDeadline, "Voting is still ongoing");
+        return votesFor > votesAgainst;
     }
 }
