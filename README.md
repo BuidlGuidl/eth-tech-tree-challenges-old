@@ -1,4 +1,7 @@
-# Template For Challenge - ETH Tech Tree
+#  Challenge 1: Token Voting Contract - ETH Tech Tree
+In a dystopian future where megacorporations have seized control over all aspects of life, a brave group of technologists and activists form an underground movement known as ***The Decentralized Resistance***. Their mission is to create a new society governed by the people, free from the tyranny of corporate overlords. They believe that blockchain technology holds the key to building a fair and transparent governance system. As a key developer in The Decentralized Resistance, you are tasked with creating the smart contracts that will enable this new society to thrive.
+
+
 ## Contents
 - [Requirements](#requirements)
 - [Start Here](#start-here)
@@ -21,16 +24,11 @@ foundryup
 ```
 
 ## Challenge Description
-*--Edit this section--*
-Write challenge description here...
+<ins>***The Decentralized Resistance***</ins> has grown rapidly, attracting members from all walks of life who are united in their desire for freedom and self-governance. To ensure that every member's voice is heard, the resistance needs a secure and transparent voting system.
 
-Here are some helpful references:
-*Replace with real resource links if any*
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
+Your task is to create a smart contract that allows token holders to vote on a specific proposal. The contract will not include the functionality for creating proposals but will assume a predefined proposal exists. Each token holder can vote either in favor or against the proposal, and their vote weight is determined by the number of tokens they hold.
 
-*--End of challenge specific section--*
+Your task starts in `packages/foundry/contracts/Voting.sol`. Use your solidity skills to make this smart contract allow <ins>***The Decentralized Resistance***</ins> to govern itself!
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
