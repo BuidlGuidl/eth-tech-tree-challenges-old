@@ -26,7 +26,10 @@ foundryup
 ## Challenge Description
 <ins>***The Decentralized Resistance***</ins> has grown rapidly, attracting members from all walks of life who are united in their desire for freedom and self-governance. To ensure that every member's voice is heard, the resistance needs a secure and transparent voting system.
 
-Your task is to create a smart contract that allows token holders to vote on a specific proposal. The contract will not include the functionality for creating proposals but will assume a predefined proposal exists. Each token holder can vote either in favor or against the proposal, and their vote weight is determined by the number of tokens they hold.
+Your task is to create a smart contract that allows token holders to vote on a specific proposal. 
+The proposal is **Expand the Intelligence Network**: Should we allocate resources to expand our intelligence network and gather more information about the activities of the megacorporations?
+
+Each token holder can vote either in favor or against the proposal, and their vote weight is determined by the number of tokens they hold.
 
 Your task starts in `packages/foundry/contracts/Voting.sol`. Use your solidity skills to make this smart contract allow <ins>***The Decentralized Resistance***</ins> to govern itself!
 
