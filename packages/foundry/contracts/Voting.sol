@@ -14,6 +14,8 @@ contract Voting {
     uint256 public votesFor;
     // Total votes against the proposal
     uint256 public votesAgainst;
+    // The proposal
+    string public proposal = "Expand the Intelligence Network";
 
     // Event emitted when a vote is cast
     event VoteCasted(address indexed voter, bool vote, uint256 weight);
