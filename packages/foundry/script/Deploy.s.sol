@@ -18,6 +18,9 @@ contract DeployScript is ScaffoldETHDeploy {
         DecentralizedResistanceToken token = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
         vm.startBroadcast(deployerPrivateKey);
         Voting challenge = new Voting(address(token), 86400);
+
+        token.setVotingContract(address(challenge));
+
         console.logString(
             string.concat(
                 "Challenge deployed at: ",

@@ -10,6 +10,8 @@ contract Voting {
     uint256 public votingDeadline;
     // Tracks whether an address has voted
     mapping(address => bool) public hasVoted;
+    // Tracks whether an address has supported the proposal
+    mapping(address => bool) public hasSupported;
     // Total votes in favor of the proposal
     uint256 public votesFor;
     // Total votes against the proposal
@@ -19,6 +21,8 @@ contract Voting {
 
     // Event emitted when a vote is cast
     event VoteCasted(address indexed voter, bool vote, uint256 weight);
+    // Event emitted when votes are removed
+    event VotesRemoved(address indexed voter, uint256 weight);
 
     /**
      * @dev Constructor to initialize the voting contract
@@ -32,6 +36,38 @@ contract Voting {
         token = IERC20(_tokenAddress);
         votingDeadline = block.timestamp + _votingPeriod;
     }
+    
+    /**
+     * @dev Modifier to restrict access to only the token contract
+     * Requirements:
+     * - The caller must be the token contract
+     */
+    modifier onlyTokenContract() {
+        require(msg.sender == address(token), "Only token contract can call this function");
+        _;
+    }
+
+    /**
+     * @dev Function to remove votes from a voter
+     * @param voter The address of the voter whose votes are to be removed
+     * Requirements:
+     * - The voter must have voted
+     * - Adjusts the vote count based on the voter's previous support or opposition
+     * - Emits a `VotesRemoved` event
+     */
+    function removeVotes(address voter) external onlyTokenContract {
+        if(!hasVoted[voter]) {
+            return;
+        }
+        uint256 weight = token.balanceOf(voter);
+        if(hasSupported[voter]){
+            votesFor -= weight;
+        } else {
+            votesAgainst -= weight;
+        }
+        hasVoted[voter] = false;
+        emit VotesRemoved(voter, weight);
+    }
 
     /**
      * @dev Function to cast a vote
@@ -42,6 +78,7 @@ contract Voting {
      * - Ensure the user has tokens to cast a vote.
      * - Updates votesFor or votesAgainst based on the vote.
      * - Marks the user as having voted.
+     * - Marks the user's support status.
      * - Emits a `VoteCasted` event.
      */
     function vote(bool support) public {
@@ -57,6 +94,7 @@ contract Voting {
             votesAgainst += voterWeight;
         }
         hasVoted[msg.sender] = true;
+        hasSupported[msg.sender] = support;
         emit VoteCasted(msg.sender, support, voterWeight);
     }
 

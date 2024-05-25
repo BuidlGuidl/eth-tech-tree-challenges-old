@@ -13,20 +13,20 @@ contract VotingTest is Test {
     address public userThree = address(0x782);
 
     function setUp() public {
-        token = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
+        token = new DecentralizedResistanceToken(1000000 * 10 ** 18); // 1,000,000 tokens
         voting = new Voting(address(token), 86400); // 1 day voting period
-
+        token.setVotingContract(address(voting)); // SetVotingContract
         // Distribute tokens
-        token.transfer(userOne, 1000 * 10**18); // 1000 tokens to userOne
-        token.transfer(userTwo, 2000 * 10**18); // 2000 tokens to userTwo
-        token.transfer(userThree, 1000 * 10**18); // 2000 tokens to userTwo
+        token.transfer(userOne, 1000 * 10 ** 18); // 1000 tokens to userOne
+        token.transfer(userTwo, 2000 * 10 ** 18); // 2000 tokens to userTwo
+        token.transfer(userThree, 1000 * 10 ** 18); // 2000 tokens to userTwo
     }
 
     function testInitialBalances() public {
-        assertEq(token.balanceOf(address(this)), 996000 * 10**18); // Deployer balance after distribution
-        assertEq(token.balanceOf(userOne), 1000 * 10**18); // userOne balance after distribution
-        assertEq(token.balanceOf(userTwo), 2000 * 10**18); // userTwo balance after distribution
-        assertEq(token.balanceOf(userThree), 1000 * 10**18); // userTwo balance after distribution
+        assertEq(token.balanceOf(address(this)), 996000 * 10 ** 18); // Deployer balance after distribution
+        assertEq(token.balanceOf(userOne), 1000 * 10 ** 18); // userOne balance after distribution
+        assertEq(token.balanceOf(userTwo), 2000 * 10 ** 18); // userTwo balance after distribution
+        assertEq(token.balanceOf(userThree), 1000 * 10 ** 18); // userTwo balance after distribution
     }
 
     function testVotingFor() public {
@@ -48,11 +48,15 @@ contract VotingTest is Test {
     }
 
     function testDoubleVoting() public {
+        //User can't double voting
         vm.startPrank(userOne);
         voting.vote(true);
         vm.expectRevert();
         voting.vote(true);
         vm.stopPrank();
+
+        assertEq(voting.votesFor(), token.balanceOf(userOne));
+        assertTrue(voting.hasVoted(userOne));
     }
 
     function testNoTokensToVote() public {
@@ -61,6 +65,7 @@ contract VotingTest is Test {
         vm.prank(userFour);
         vm.expectRevert();
         voting.vote(true);
+
         assertFalse(voting.hasVoted(userFour));
     }
 
@@ -72,6 +77,7 @@ contract VotingTest is Test {
         voting.vote(false);
         vm.warp(block.timestamp + 86400 + 1);
         bool result = voting.getResult();
+
         assertEq(result, false);
     }
 
@@ -79,38 +85,31 @@ contract VotingTest is Test {
         // 1000 for vs 2000 against
         vm.prank(userOne);
         voting.vote(true);
-
         vm.prank(userTwo);
         voting.vote(false);
-
         vm.warp(block.timestamp + 86400 + 1);
-
         bool result = voting.getResult();
-        assertEq(result, false); 
+
+        assertEq(result, false);
     }
 
     function testVotingResultApproved() public {
-         // 2000 for vs 1000 against
-           
+        // 2000 for vs 1000 against
         vm.prank(userOne);
         voting.vote(false);
-
         vm.prank(userTwo);
         voting.vote(true);
-
         vm.warp(block.timestamp + 86400 + 1);
-
         bool result = voting.getResult();
+
         assertEq(result, true);
     }
     function testGetResultBeforeDeadline() public {
         // Try to get the result before the voting deadline
         vm.prank(userOne);
         voting.vote(true);
-
         vm.prank(userTwo);
         voting.vote(false);
-
         vm.expectRevert();
         voting.getResult();
     }
@@ -120,6 +119,33 @@ contract VotingTest is Test {
         vm.prank(userOne);
         vm.expectRevert();
         voting.vote(true);
+    }
+    function testVoteRemovalOnTransfer() public {
+        // User votes are removed when transfer any queantity of tokens
+        vm.prank(userOne);
+        voting.vote(true);
+        vm.prank(userOne);
+        token.transfer(userTwo, 500 * 10 ** 18);
+
+        assertEq(voting.votesFor(), 0); 
+        assertFalse(voting.hasVoted(userOne)); 
+        assertEq(token.balanceOf(userOne), 500 * 10 ** 18);
+        assertEq(token.balanceOf(userTwo), 2500 * 10 ** 18);
+    }
+
+     function testNotVotingCotractAddressCantCallRemoval() public {
+        // Only the token contract can call the removal
+        vm.prank(userOne);
+        voting.vote(true);
+        vm.prank(userTwo);
+        voting.vote(false);
+        vm.expectRevert();
+        voting.removeVotes(userOne);
+
+        assertTrue(voting.hasVoted(userOne)); 
+        assertTrue(voting.hasVoted(userTwo)); 
+        assertEq(token.balanceOf(userOne), voting.votesFor());
+        assertEq(token.balanceOf(userTwo), voting.votesAgainst());
     }
 
 }
