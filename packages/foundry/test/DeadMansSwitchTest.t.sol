@@ -95,9 +95,12 @@ contract DeadMansSwitchTest is Test {
     // Test that the Withdrawal event is emitted correctly
     function testEmitWithdrawalEvent() public {
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
-        vm.expectEmit(true, true, true, true);
+        deadMansSwitch.setCheckInInterval(INTERVAL);
+        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+        vm.warp(block.timestamp + INTERVAL + 1);
+        vm.startPrank(BENEFICIARY_1);
         emit DeadMansSwitch.Withdrawal(THIS_CONTRACT, ONE_THOUSAND);
-        deadMansSwitch.withdraw(ONE_THOUSAND);
+        deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
 
     // Test that the CheckIn event is emitted correctly

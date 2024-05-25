@@ -28,7 +28,12 @@ contract DeadMansSwitch {
      * - Updates the last check-in time to the current block timestamp.
      * - Emits a `Deposit` event with the caller's address and the amount of Ether deposited.
      */
-    function deposit() public payable {}
+    function deposit() public payable {
+        User storage user = users[msg.sender];
+        user.balance += msg.value;
+        user.lastCheckIn = block.timestamp;
+        emit Deposit(msg.sender, msg.value);
+    }
 
     /**
      * @dev Sets the check-in interval for the user.
@@ -37,7 +42,12 @@ contract DeadMansSwitch {
      * - The interval must be greater than 0.
      * - Emits a `CheckInIntervalSet` event with the caller's address and the interval.
      */
-    function setCheckInInterval(uint interval) public {}
+    function setCheckInInterval(uint interval) public {
+        require(interval > 0, "Interval must be greater than 0");
+        User storage user = users[msg.sender];
+        user.checkInInterval = interval;
+        emit CheckInIntervalSet(msg.sender, interval);
+    }
 
     /**
      * @dev Allows the user to check in and reset the timer.
@@ -45,7 +55,11 @@ contract DeadMansSwitch {
      * - Updates the last check-in time to the current block timestamp.
      * - Emits a `CheckIn` event with the caller's address and the current timestamp.
      */
-    function checkIn() public {}
+    function checkIn() public {
+        User storage user = users[msg.sender];
+        user.lastCheckIn = block.timestamp;
+        emit CheckIn(msg.sender, block.timestamp);
+    }
 
     /**
      * @dev Adds a beneficiary for the user's funds.
@@ -55,7 +69,18 @@ contract DeadMansSwitch {
      * - The beneficiary must not already be added.
      * - Emits a `BeneficiaryAdded` event with the caller's address and the beneficiary address.
      */
-    function addBeneficiary(address beneficiary) public {}
+    function addBeneficiary(address beneficiary) public {
+        require(beneficiary != address(0), "Invalid beneficiary address");
+        User storage user = users[msg.sender];
+        for (uint i = 0; i < user.beneficiaries.length; i++) {
+            require(
+                user.beneficiaries[i] != beneficiary,
+                "Beneficiary already added"
+            );
+        }
+        user.beneficiaries.push(beneficiary);
+        emit BeneficiaryAdded(msg.sender, beneficiary);
+    }
 
     /**
      * @dev Allows the user to withdraw their funds at any time.
@@ -65,7 +90,14 @@ contract DeadMansSwitch {
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
-    function withdraw(uint amount) public payable {}
+    function withdraw(uint amount) public {
+        User storage user = users[msg.sender];
+        require(user.balance >= amount, "Insufficient balance");
+        user.balance -= amount;
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        require(sent, "Failed to send Ether");
+        emit Withdrawal(msg.sender, amount);
+    }
 
     /**
      * @dev Allows beneficiaries to withdraw the user's funds if the check-in interval has passed.
@@ -76,21 +108,44 @@ contract DeadMansSwitch {
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the beneficiary's address and the amount of Ether withdrawn.
      */
-    function withdrawAsBeneficiary(address userAddress) public {}
+    function withdrawAsBeneficiary(address userAddress) public {
+        User storage user = users[userAddress];
+        require(
+            block.timestamp >= user.lastCheckIn + user.checkInInterval,
+            "Check-in interval has not passed"
+        );
+        bool isBeneficiary = false;
+        for (uint i = 0; i < user.beneficiaries.length; i++) {
+            if (user.beneficiaries[i] == msg.sender) {
+                isBeneficiary = true;
+                break;
+            }
+        }
+        require(isBeneficiary, "Caller is not a beneficiary");
+        uint amount = user.balance;
+        user.balance = 0;
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        require(sent, "Failed to send Ether");
+        emit Withdrawal(msg.sender, amount);
+    }
 
     /**
      * @dev Gets the balance of the user.
      * @param userAddress The address of the user.
      * @return The balance of the user.
      */
-    function getBalance(address userAddress) public view returns (uint) {}
+    function getBalance(address userAddress) public view returns (uint) {
+        return users[userAddress].balance;
+    }
 
     /**
      * @dev Gets the last check-in time of the user.
      * @param userAddress The address of the user.
      * @return The last check-in time of the user.
      */
-    function getLastCheckIn(address userAddress) public view returns (uint) {}
+    function getLastCheckIn(address userAddress) public view returns (uint) {
+        return users[userAddress].lastCheckIn;
+    }
 
     /**
      * @dev Gets the check-in interval of the user.
@@ -99,7 +154,9 @@ contract DeadMansSwitch {
      */
     function getCheckInInterval(
         address userAddress
-    ) public view returns (uint) {}
+    ) public view returns (uint) {
+        return users[userAddress].checkInInterval;
+    }
 
     /**
      * @dev Gets the beneficiaries of the user.
@@ -108,5 +165,7 @@ contract DeadMansSwitch {
      */
     function getBeneficiaries(
         address userAddress
-    ) public view returns (address[] memory) {}
+    ) public view returns (address[] memory) {
+        return users[userAddress].beneficiaries;
+    }
 }
