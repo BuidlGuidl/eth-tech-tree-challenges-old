@@ -2,28 +2,31 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../contracts/MyToken.sol";
+import "../contracts/DecentralizedResistanceToken.sol";
 import "../contracts/Voting.sol";
 
 contract VotingTest is Test {
-    MyToken public token;
+    DecentralizedResistanceToken public token;
     Voting public voting;
     address public userOne = address(0x123);
     address public userTwo = address(0x456);
+    address public userThree = address(0x782);
 
     function setUp() public {
-        token = new MyToken(1000000 * 10**18); // 1,000,000 tokens
+        token = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
         voting = new Voting(address(token), 86400); // 1 day voting period
 
         // Distribute tokens
         token.transfer(userOne, 1000 * 10**18); // 1000 tokens to userOne
         token.transfer(userTwo, 2000 * 10**18); // 2000 tokens to userTwo
+        token.transfer(userThree, 1000 * 10**18); // 2000 tokens to userTwo
     }
 
     function testInitialBalances() public {
-        assertEq(token.balanceOf(address(this)), 997000 * 10**18); // Deployer balance after distribution
+        assertEq(token.balanceOf(address(this)), 996000 * 10**18); // Deployer balance after distribution
         assertEq(token.balanceOf(userOne), 1000 * 10**18); // userOne balance after distribution
         assertEq(token.balanceOf(userTwo), 2000 * 10**18); // userTwo balance after distribution
+        assertEq(token.balanceOf(userThree), 1000 * 10**18); // userTwo balance after distribution
     }
 
     function testVotingFor() public {
@@ -54,11 +57,22 @@ contract VotingTest is Test {
 
     function testNoTokensToVote() public {
         // 0 in the balanceof userThree, so he can't vote
-        address userThree = address(0x789);
-        vm.prank(userThree);
+        address userFour = address(0x789);
+        vm.prank(userFour);
         vm.expectRevert();
         voting.vote(true);
-        assertFalse(voting.hasVoted(userThree));
+        assertFalse(voting.hasVoted(userFour));
+    }
+
+    function testTieVotingResult() public {
+        // A tie should result in rejection
+        vm.prank(userOne);
+        voting.vote(true);
+        vm.prank(userThree);
+        voting.vote(false);
+        vm.warp(block.timestamp + 86400 + 1);
+        bool result = voting.getResult();
+        assertEq(result, false);
     }
 
     function testVotingResultRejected() public {

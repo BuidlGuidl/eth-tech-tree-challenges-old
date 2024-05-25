@@ -62,7 +62,7 @@ contract Voting {
 
     /**
      * @dev Function to get the result of the vote
-     * @return The result of the vote as a string ("Proposal Approved" or "Proposal Rejected")
+     * @return The result of the vote as boolean (true for in favor, false for against)
      * Requirements:
      * - Ensure the voting period has ended
      * - Determine the result based on the majority vote
