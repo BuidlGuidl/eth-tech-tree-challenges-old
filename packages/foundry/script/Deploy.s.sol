@@ -15,8 +15,8 @@ contract DeployScript is ScaffoldETHDeploy {
                 "You don't have a deployer account. Make sure you have set DEPLOYER_PRIVATE_KEY in .env or use `yarn generate` to generate a new random account"
             );
         }
-        DecentralizedResistanceToken token = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
         vm.startBroadcast(deployerPrivateKey);
+        DecentralizedResistanceToken token = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
         Voting challenge = new Voting(address(token), 86400);
 
         token.setVotingContract(address(challenge));

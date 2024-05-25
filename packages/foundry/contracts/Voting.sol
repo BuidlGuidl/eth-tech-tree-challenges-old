@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
+import { console2 } from "forge-std/console2.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Voting {
     // Token contract interface
@@ -45,13 +46,13 @@ contract Voting {
     }
 
     /**
-     * @dev Function to remove votes from a voter
+     * @dev Function to remove votes when tokens used for voting are transferred
      * @param voter The address of the voter whose votes are to be removed
      * Requirements:
      * - The voter must have voted
      * - Adjusts the vote count based on the voter's previous support or opposition
      * - Remove the voter's weight from voted option
-     * - Resets the hasVoted and hasVoted flags for the voter
+     * - Resets the hasVoted flags for the voter
      * - Emits a `VotesRemoved` event
      */
     function removeVotes(address voter) external onlyTokenContract {
@@ -74,7 +75,7 @@ contract Voting {
 
     /**
      * @dev Function to get the result of the vote
-     * @return The result of the vote as boolean (true for in favor, false for against)
+     * @return The result should be true if the majority of votes are in favor, otherwise return false
      * Requirements:
      * - Ensure the voting period has ended
      * - Determine the result based on the majority vote

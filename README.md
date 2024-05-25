@@ -32,10 +32,8 @@ The proposal is **Expand the Intelligence Network**:
 
 Each token holder can vote either in favor or against the proposal, and their vote weight is determined by the number of tokens they hold.
 
-Your task starts in `packages/foundry/contracts/Voting.sol` and `packages/foundry/contracts/DecentralizedResistanceToken.sol`. Use your solidity skills to make this smart contract allow <ins>***The Decentralized Resistance***</ins> to govern itself!
-Follow the requirements of the contracts to 100% complete the challenge.
-
-**Note:** The council of elders has realized that the current implementation of the voting contract exposes who votes and how they vote. This could potentially lead to issues regarding voter privacy. In future iterations, we will consider implementing a more privacy-resistant voting mechanism to protect the anonymity of the voters.
+Your task starts in `packages/foundry/contracts/Voting.sol`. Use your solidity skills to make this smart contract allow <ins>***The Decentralized Resistance***</ins> to govern itself!
+Follow the requirements of the contract to 100% complete the challenge.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
