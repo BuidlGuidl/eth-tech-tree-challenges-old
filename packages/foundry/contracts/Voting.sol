@@ -10,6 +10,8 @@ contract Voting {
     uint256 public votingDeadline;
     // Tracks whether an address has voted
     mapping(address => bool) public hasVoted;
+    // Tracks whether an address has supported the proposal
+    mapping(address => bool) public hasSupported;
     // Total votes in favor of the proposal
     uint256 public votesFor;
     // Total votes against the proposal
@@ -19,6 +21,8 @@ contract Voting {
 
     // Event emitted when a vote is cast
     event VoteCasted(address indexed voter, bool vote, uint256 weight);
+    // Event emitted when votes are removed
+    event VotesRemoved(address indexed voter, uint256 weight);
 
     /**
      * @dev Constructor to initialize the voting contract
@@ -29,7 +33,26 @@ contract Voting {
      * - Set the voting deadline
      */
     constructor(address _tokenAddress, uint256 _votingPeriod) {
+    }
+    
+    /**
+     * @dev Modifier to restrict access to only the token contract
+     * Requirements:
+     * - The caller must be the token contract
+     */
+    modifier onlyTokenContract() {
+        _;
+    }
 
+    /**
+     * @dev Function to remove votes from a voter
+     * @param voter The address of the voter whose votes are to be removed
+     * Requirements:
+     * - The voter must have voted
+     * - Adjusts the vote count based on the voter's previous support or opposition
+     * - Emits a `VotesRemoved` event
+     */
+    function removeVotes(address voter) external onlyTokenContract {
     }
 
     /**
@@ -41,6 +64,7 @@ contract Voting {
      * - Ensure the user has tokens to cast a vote.
      * - Updates votesFor or votesAgainst based on the vote.
      * - Marks the user as having voted.
+     * - Marks the user's support status.
      * - Emits a `VoteCasted` event.
      */
     function vote(bool support) public {
@@ -48,11 +72,12 @@ contract Voting {
 
     /**
      * @dev Function to get the result of the vote
-     * @return The result of the vote as a string ("Proposal Approved" or "Proposal Rejected")
+     * @return The result of the vote as boolean (true for in favor, false for against)
      * Requirements:
      * - Ensure the voting period has ended
      * - Determine the result based on the majority vote
      */
     function getResult() public view returns (bool) {
+
     }
 }
