@@ -50,6 +50,8 @@ contract Voting {
      * Requirements:
      * - The voter must have voted
      * - Adjusts the vote count based on the voter's previous support or opposition
+     * - Remove the voter's weight from voted option
+     * - Resets the hasVoted and hasVoted flags for the voter
      * - Emits a `VotesRemoved` event
      */
     function removeVotes(address voter) external onlyTokenContract {
