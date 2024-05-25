@@ -1,4 +1,10 @@
 # Template For Challenge - ETH Tech Tree
+*--Change the above "Template For Challenge" to the challenge name--*
+*--Add a paragraph sized story that pulls in the challenger to their mission--*
+
+
+*--End of story section--*
+
 ## Contents
 - [Requirements](#requirements)
 - [Start Here](#start-here)
