@@ -3,18 +3,19 @@ pragma solidity >=0.8.0 <0.9.0;
 
 contract DeadMansSwitch {
     // Event declarations
+    event CheckIn(address indexed user, uint timestamp);
     event Deposit(address indexed depositor, uint amount);
     event Withdrawal(address indexed beneficiary, uint amount);
-    event CheckIn(address indexed user, uint timestamp);
-    event BeneficiaryAdded(address indexed user, address indexed beneficiary);
     event CheckInIntervalSet(address indexed user, uint interval);
+    event BeneficiaryAdded(address indexed user, address indexed beneficiary);
+    event BeneficiaryRemoved(address indexed user, address indexed beneficiary);
 
     // Struct to store user data
     struct User {
         uint balance;
         uint lastCheckIn;
         uint checkInInterval;
-        address[] beneficiaries;
+        mapping(address => bool) beneficiaries;
     }
 
     // Mappings to store user data
@@ -28,12 +29,7 @@ contract DeadMansSwitch {
      * - Updates the last check-in time to the current block timestamp.
      * - Emits a `Deposit` event with the caller's address and the amount of Ether deposited.
      */
-    function deposit() public payable {
-        User storage user = users[msg.sender];
-        user.balance += msg.value;
-        user.lastCheckIn = block.timestamp;
-        emit Deposit(msg.sender, msg.value);
-    }
+    function deposit() public payable {}
 
     /**
      * @dev Sets the check-in interval for the user.
@@ -42,12 +38,7 @@ contract DeadMansSwitch {
      * - The interval must be greater than 0.
      * - Emits a `CheckInIntervalSet` event with the caller's address and the interval.
      */
-    function setCheckInInterval(uint interval) public {
-        require(interval > 0, "Interval must be greater than 0");
-        User storage user = users[msg.sender];
-        user.checkInInterval = interval;
-        emit CheckInIntervalSet(msg.sender, interval);
-    }
+    function setCheckInInterval(uint interval) public {}
 
     /**
      * @dev Allows the user to check in and reset the timer.
@@ -55,11 +46,7 @@ contract DeadMansSwitch {
      * - Updates the last check-in time to the current block timestamp.
      * - Emits a `CheckIn` event with the caller's address and the current timestamp.
      */
-    function checkIn() public {
-        User storage user = users[msg.sender];
-        user.lastCheckIn = block.timestamp;
-        emit CheckIn(msg.sender, block.timestamp);
-    }
+    function checkIn() public {}
 
     /**
      * @dev Adds a beneficiary for the user's funds.
@@ -69,19 +56,16 @@ contract DeadMansSwitch {
      * - The beneficiary must not already be added.
      * - Emits a `BeneficiaryAdded` event with the caller's address and the beneficiary address.
      */
-    function addBeneficiary(address beneficiary) public {
-        require(beneficiary != address(0), "Invalid beneficiary address");
-        User storage user = users[msg.sender];
-        for (uint i = 0; i < user.beneficiaries.length; i++) {
-            require(
-                user.beneficiaries[i] != beneficiary,
-                "Beneficiary already added"
-            );
-        }
-        user.beneficiaries.push(beneficiary);
-        emit BeneficiaryAdded(msg.sender, beneficiary);
-    }
+    function addBeneficiary(address beneficiary) public {}
 
+    /**
+     * @dev Removes a beneficiary for the user's funds.
+     * @param beneficiary The address of the beneficiary to remove.
+     * Requirements:
+     * - The beneficiary must be already added.
+     * - Emits a `BeneficiaryRemoved` event with the caller's address and the beneficiary address.
+     */
+    function removeBeneficiary(address beneficiary) public {}
     /**
      * @dev Allows the user to withdraw their funds at any time.
      * @param amount The amount of Ether to withdraw.
@@ -90,14 +74,7 @@ contract DeadMansSwitch {
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
-    function withdraw(uint amount) public {
-        User storage user = users[msg.sender];
-        require(user.balance >= amount, "Insufficient balance");
-        user.balance -= amount;
-        (bool sent, ) = msg.sender.call{value: amount}("");
-        require(sent, "Failed to send Ether");
-        emit Withdrawal(msg.sender, amount);
-    }
+    function withdraw(uint amount) public {}
 
     /**
      * @dev Allows beneficiaries to withdraw the user's funds if the check-in interval has passed.
@@ -108,26 +85,7 @@ contract DeadMansSwitch {
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the beneficiary's address and the amount of Ether withdrawn.
      */
-    function withdrawAsBeneficiary(address userAddress) public {
-        User storage user = users[userAddress];
-        require(
-            block.timestamp >= user.lastCheckIn + user.checkInInterval,
-            "Check-in interval has not passed"
-        );
-        bool isBeneficiary = false;
-        for (uint i = 0; i < user.beneficiaries.length; i++) {
-            if (user.beneficiaries[i] == msg.sender) {
-                isBeneficiary = true;
-                break;
-            }
-        }
-        require(isBeneficiary, "Caller is not a beneficiary");
-        uint amount = user.balance;
-        user.balance = 0;
-        (bool sent, ) = msg.sender.call{value: amount}("");
-        require(sent, "Failed to send Ether");
-        emit Withdrawal(msg.sender, amount);
-    }
+    function withdrawAsBeneficiary(address userAddress) public {}
 
     /**
      * @dev Gets the balance of the user.
@@ -135,7 +93,7 @@ contract DeadMansSwitch {
      * @return The balance of the user.
      */
     function getBalance(address userAddress) public view returns (uint) {
-        return users[userAddress].balance;
+        return 0;
     }
 
     /**
@@ -144,7 +102,7 @@ contract DeadMansSwitch {
      * @return The last check-in time of the user.
      */
     function getLastCheckIn(address userAddress) public view returns (uint) {
-        return users[userAddress].lastCheckIn;
+        return 0;
     }
 
     /**
@@ -155,17 +113,22 @@ contract DeadMansSwitch {
     function getCheckInInterval(
         address userAddress
     ) public view returns (uint) {
-        return users[userAddress].checkInInterval;
+        return 0;
     }
 
     /**
-     * @dev Gets the beneficiaries of the user.
+     * @dev Gets to check if there is a beneficiary.
      * @param userAddress The address of the user.
-     * @return The beneficiaries of the user.
+     * @param beneficiary The address of the beneficiary.
+     * @return The check-in interval of the user.
      */
-    function getBeneficiaries(
-        address userAddress
-    ) public view returns (address[] memory) {
-        return users[userAddress].beneficiaries;
+    function isBeneficiary(
+        address userAddress,
+        address beneficiary
+    ) public view returns (bool) {
+        return false;
     }
+
+    receive() external payable {}
+    fallback() external payable {}
 }

@@ -39,15 +39,30 @@ contract DeadMansSwitchTest is Test {
     // Test adding a beneficiary
     function testAddBeneficiary() public {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
-        address[] memory beneficiaries = deadMansSwitch.getBeneficiaries(
-            THIS_CONTRACT
+        assertEq(
+            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            true
         );
-        assertEq(beneficiaries.length, 1);
-        assertEq(beneficiaries[0], BENEFICIARY_1);
+    }
+    // Test removing a beneficiary
+    function testRemoveBeneficiary() public {
+        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+        assertEq(
+            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            true
+        );
+
+        deadMansSwitch.removeBeneficiary(BENEFICIARY_1);
+        assertEq(
+            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            false
+        );
     }
 
     // // Test withdrawing funds by the user
     function testWithdraw() public {
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
         deadMansSwitch.withdraw(ONE_THOUSAND);
         assertEq(deadMansSwitch.getBalance(THIS_CONTRACT), 0);
@@ -94,13 +109,11 @@ contract DeadMansSwitchTest is Test {
 
     // Test that the Withdrawal event is emitted correctly
     function testEmitWithdrawalEvent() public {
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
-        deadMansSwitch.setCheckInInterval(INTERVAL);
-        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
-        vm.warp(block.timestamp + INTERVAL + 1);
-        vm.startPrank(BENEFICIARY_1);
         emit DeadMansSwitch.Withdrawal(THIS_CONTRACT, ONE_THOUSAND);
-        deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
+        deadMansSwitch.withdraw(ONE_THOUSAND);
     }
 
     // Test that the CheckIn event is emitted correctly
@@ -116,6 +129,14 @@ contract DeadMansSwitchTest is Test {
         vm.expectEmit(true, true, true, true);
         emit DeadMansSwitch.BeneficiaryAdded(THIS_CONTRACT, BENEFICIARY_1);
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+    }
+
+    // Test removing a beneficiary
+    function testEmitBeneficiaryRemovedEvent() public {
+        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+        vm.expectEmit(true, true, true, true);
+        emit DeadMansSwitch.BeneficiaryRemoved(THIS_CONTRACT, BENEFICIARY_1);
+        deadMansSwitch.removeBeneficiary(BENEFICIARY_1);
     }
 
     // Test that the CheckInIntervalSet event is emitted correctly
