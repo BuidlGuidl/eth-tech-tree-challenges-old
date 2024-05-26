@@ -121,7 +121,7 @@ contract VotingTest is Test {
         voting.vote(true);
     }
     function testVoteRemovalOnTransfer() public {
-        // User votes are removed when transfer any queantity of tokens
+        // User votes are removed when transfer any quantity of tokens
         vm.prank(userOne);
         voting.vote(true);
         assertEq(voting.votesFor(), token.balanceOf(userOne)); 
