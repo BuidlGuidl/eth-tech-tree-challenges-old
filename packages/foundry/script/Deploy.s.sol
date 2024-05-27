@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/EthAndTokenStreaming.sol";
+import {EthStreaming} from "../contracts/EthStreaming.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,11 +15,11 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        EthAndTokenStreaming ethAndTokenStreaming = new EthAndTokenStreaming();
+        EthStreaming ethStreaming = new EthStreaming();
         console.logString(
             string.concat(
                 "Challenge deployed at: ",
-                vm.toString(address(ethAndTokenStreaming))
+                vm.toString(address(ethStreaming))
             )
         );
         vm.stopBroadcast();

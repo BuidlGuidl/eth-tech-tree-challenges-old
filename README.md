@@ -1,8 +1,10 @@
-# Template For Challenge - ETH Tech Tree
+# ETH Streaming Challenge
+
+In a world where asset allocation mechanisms have grown stale, a visionary group of technologists known as **_The StreamWeavers_** emerges. Their mission is to pioneer novel means of distributing capital that incentivize creativity and coordination. As a core developer for **_The StreamWeavers_**, you are tasked with forging the smart contracts that will allow this new system to flourish and ensure that everyone can manage their digital assets freely.
 
 ## Contents
 
-- [Template For Challenge - ETH Tech Tree](#template-for-challenge---eth-tech-tree)
+- [ETH Streaming Challenge](#eth-streaming-challenge)
   - [Contents](#contents)
   - [Requirements](#requirements)
   - [Start Here](#start-here)
@@ -28,9 +30,9 @@ foundryup
 
 ## Challenge Description
 
-TODO: WIP
+Amidst a backdrop where centralized control over capital resouces stifles innovation and freedom, your challenge is to write a smart contract named "EthStreaming". This contract will empower authorized users to manage Ethereum assets in a decentralized manner—ensuring that the flow of resources is as continuous and uninterrupted as the ideals we uphold. Designated accounts will be permitted to withdraw predefined amounts of ETH, dictated by the passage of time since their last withrawal.
 
-The goal for this challenge is to write a simple "stream" contract. A stream contract allows authorized accounts to withdraw up to a specified amount of ETH. After a withdrawal, the priveledged account must wait a specified amount of time before withdrawing the full amount again. This means you will have to calculate the amount of stream cap available using the time elapsed since the last withdrawal. The owner of the contract will be the deployer. Only the owner of the contract is allowed to add a stream.
+As the architect, you will start this endeavor in `packages/foundry/contracts/EthStreaming.sol` where you will craft a new paradigm where freedom and resources flow hand in hand.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 

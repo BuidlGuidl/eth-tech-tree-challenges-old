@@ -5,7 +5,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {console} from "forge-std/console.sol";
 
-contract EthAndTokenStreaming is Ownable {
+contract EthStreaming is Ownable {
     /***** ERRORS *****/
     error InsufficentFunds();
     error NoActiveStream();
@@ -32,14 +32,21 @@ contract EthAndTokenStreaming is Ownable {
     /***** EVENTS *****/
     event Withdraw(address indexed to, uint256 amount);
     event AddStream(address indexed to, uint256 cap);
+    event EthReceived(address indexed from, uint256 amount);
 
     /***** FUNCTIONS *****/
     constructor() {}
 
     /***** EXTERNAL FUNCTIONS *****/
-    receive() external payable {}
-
-    fallback() external payable {}
+    /**
+     * @dev This is a special fallback function allows the contract to receive ether 👉 https://solidity-by-example.org/fallback/
+     * The function also offers us opportunity to emit an event that will make it easier to track incoming funds
+     * Requirements:
+     * - Emit a `EthReceived` event with the address of the sender and the amount of ether sent
+     */
+    receive() external payable {
+        emit EthReceived(msg.sender, msg.value);
+    }
 
     /**
      * @param account new account allowed allowed to withdraw from a stream
@@ -88,11 +95,6 @@ contract EthAndTokenStreaming is Ownable {
     ) public view hasStream(account) returns (uint256 amount) {
         StreamConfig storage stream = s_streamRegistry[account];
 
-        console.log("block.timestamp: ", block.timestamp);
-        console.log(
-            "stream.timeOfLastWithdrawal: ",
-            stream.timeOfLastWithdrawal
-        );
         uint256 timeSinceLastWithdrawal = block.timestamp -
             stream.timeOfLastWithdrawal;
         if (timeSinceLastWithdrawal > i_frequency) return stream.cap;
