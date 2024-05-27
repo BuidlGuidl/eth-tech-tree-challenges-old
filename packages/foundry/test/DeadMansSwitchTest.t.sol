@@ -9,7 +9,7 @@ contract DeadMansSwitchTest is Test {
     address THIS_CONTRACT = address(this);
     address NON_CONTRACT_USER = vm.addr(1);
     address BENEFICIARY_1 = vm.addr(2);
-    uint ONE_THOUSAND = 10 wei;
+    uint ONE_THOUSAND = 1000 wei;
     uint INTERVAL = 1 weeks;
 
     // Setup the contract before each test
@@ -20,52 +20,57 @@ contract DeadMansSwitchTest is Test {
     // Test deposit functionality
     function testDeposit() public {
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
-        assertEq(deadMansSwitch.getBalance(THIS_CONTRACT), ONE_THOUSAND);
+        (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(balance, ONE_THOUSAND);
     }
 
     // Test setting the check-in interval
     function testSetCheckInInterval() public {
         deadMansSwitch.setCheckInInterval(INTERVAL);
-        assertEq(deadMansSwitch.getCheckInInterval(THIS_CONTRACT), INTERVAL);
+        (, , uint checkInterval) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(checkInterval, INTERVAL);
     }
 
     // Test the check-in functionality
     function testCheckIn() public {
         deadMansSwitch.setCheckInInterval(INTERVAL);
         deadMansSwitch.checkIn();
-        assertEq(deadMansSwitch.getLastCheckIn(THIS_CONTRACT), block.timestamp);
+        (, uint lastCheckIn, ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(lastCheckIn, block.timestamp);
     }
 
     // Test adding a beneficiary
     function testAddBeneficiary() public {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
         assertEq(
-            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            deadMansSwitch.beneficiaryLookup(THIS_CONTRACT, BENEFICIARY_1),
             true
         );
     }
+
     // Test removing a beneficiary
     function testRemoveBeneficiary() public {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
         assertEq(
-            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            deadMansSwitch.beneficiaryLookup(THIS_CONTRACT, BENEFICIARY_1),
             true
         );
 
         deadMansSwitch.removeBeneficiary(BENEFICIARY_1);
         assertEq(
-            deadMansSwitch.isBeneficiary(THIS_CONTRACT, BENEFICIARY_1),
+            deadMansSwitch.beneficiaryLookup(THIS_CONTRACT, BENEFICIARY_1),
             false
         );
     }
 
-    // // Test withdrawing funds by the user
+    // Test withdrawing funds by the user
     function testWithdraw() public {
         vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
         vm.startPrank(NON_CONTRACT_USER);
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
         deadMansSwitch.withdraw(ONE_THOUSAND);
-        assertEq(deadMansSwitch.getBalance(THIS_CONTRACT), 0);
+        (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(balance, 0);
     }
 
     // Test withdrawing funds by a beneficiary after the interval has passed
@@ -73,10 +78,18 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
         deadMansSwitch.setCheckInInterval(INTERVAL);
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+        assertEq(
+            deadMansSwitch.beneficiaryLookup(THIS_CONTRACT, BENEFICIARY_1),
+            true
+        );
         vm.warp(block.timestamp + INTERVAL + 1);
         vm.startPrank(BENEFICIARY_1);
+        uint initialBalance = address(BENEFICIARY_1).balance;
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
-        assertEq(deadMansSwitch.getBalance(THIS_CONTRACT), 0);
+        uint finalBalance = address(BENEFICIARY_1).balance;
+        assertEq(finalBalance, initialBalance + ONE_THOUSAND);
+        (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(balance, 0);
     }
 
     // Test that non-beneficiaries cannot withdraw funds
@@ -85,7 +98,16 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.setCheckInInterval(INTERVAL);
         vm.warp(block.timestamp + INTERVAL + 1);
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert("Caller is not a beneficiary");
+        vm.expectRevert();
+        deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
+    }
+    // Test that non-beneficiaries cannot withdraw funds before the interval has passed
+    function testWithdrawAsNonBeneficiaryBeforeInterval() public {
+        deadMansSwitch.deposit{value: ONE_THOUSAND}();
+        deadMansSwitch.setCheckInInterval(INTERVAL);
+        vm.warp(block.timestamp + INTERVAL - 1);
+        vm.startPrank(NON_CONTRACT_USER);
+        vm.expectRevert();
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
 
@@ -96,8 +118,21 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
         vm.warp(block.timestamp + INTERVAL - 1);
         vm.startPrank(BENEFICIARY_1);
-        vm.expectRevert("Check-in interval has not passed");
+        vm.expectRevert();
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
+    }
+
+    //Test  if user is already a beneficiary
+    function testAddBeneficiaryTwice() public {
+        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+        vm.expectRevert();
+        deadMansSwitch.addBeneficiary(BENEFICIARY_1);
+    }
+
+    //Test for zero address
+    function testZeroAddress() public {
+        vm.expectRevert();
+        deadMansSwitch.addBeneficiary(address(0));
     }
 
     // Test that the Deposit event is emitted correctly

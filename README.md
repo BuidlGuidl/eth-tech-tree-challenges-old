@@ -1,4 +1,4 @@
-# Dead Man's Switch
+# Dead Man's Switch - ETH Tech Tree
 
 ## Contents
 
@@ -30,11 +30,9 @@ foundryup
 
 In this challenge, you will create a smart contract that implements a "Dead Man's Switch". This contract allows users to deposit funds (ETH or other tokens) and set a time interval for regular "check-ins". If the user fails to check in within the specified time frame, designated beneficiaries can withdraw the funds.
 
-Here are some helpful references:
+##### Scenario:
 
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
+Imagine you want to ensure that your funds are securely passed on to your loved ones or trusted parties if something happens to you and you can no longer interact with the contract. This "Dead Man's Switch" will automate this process based on your predefined conditions.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 

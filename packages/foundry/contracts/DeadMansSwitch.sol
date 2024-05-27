@@ -15,11 +15,11 @@ contract DeadMansSwitch {
         uint balance;
         uint lastCheckIn;
         uint checkInInterval;
-        mapping(address => bool) beneficiaries;
+        mapping(address => bool) isBeneficiary;
     }
 
     // Mappings to store user data
-    mapping(address => User) private users;
+    mapping(address => User) public users;
 
     /**
      * @dev Deposits Ether into the contract.
@@ -73,8 +73,8 @@ contract DeadMansSwitch {
     function addBeneficiary(address beneficiary) public {
         require(beneficiary != address(0), "Invalid beneficiary address");
         User storage user = users[msg.sender];
-        require(!user.beneficiaries[msg.sender], "Beneficiary already added");
-        user.beneficiaries[beneficiary] = true;
+        require(!user.isBeneficiary[beneficiary], "Beneficiary already added");
+        user.isBeneficiary[beneficiary] = true;
         emit BeneficiaryAdded(msg.sender, beneficiary);
     }
 
@@ -84,11 +84,12 @@ contract DeadMansSwitch {
      * Requirements:
      * - The beneficiary must be already added.
      * - Emits a `BeneficiaryRemoved` event with the caller's address and the beneficiary address.
+     * - The beneficiary is removed
      */
     function removeBeneficiary(address beneficiary) public {
         User storage user = users[msg.sender];
-        require(user.beneficiaries[beneficiary], "Beneficiary not found");
-        delete user.beneficiaries[beneficiary];
+        require(user.isBeneficiary[beneficiary], "Beneficiary not found");
+        delete user.isBeneficiary[beneficiary];
         emit BeneficiaryRemoved(msg.sender, beneficiary);
     }
     /**
@@ -109,10 +110,10 @@ contract DeadMansSwitch {
     }
 
     /**
-     * @dev Allows beneficiaries to withdraw the user's funds if the check-in interval has passed.
+     * @dev Allows isBeneficiary to withdraw the user's funds if the check-in interval has passed.
      * @param userAddress The address of the user.
      * Requirements:
-     * - The caller must be one of the user's beneficiaries.
+     * - The caller must be one of the user's isBeneficiary.
      * - The user's check-in interval must have passed without a check-in.
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the beneficiary's address and the amount of Ether withdrawn.
@@ -123,7 +124,7 @@ contract DeadMansSwitch {
             block.timestamp >= user.lastCheckIn + user.checkInInterval,
             "Check-in interval has not passed"
         );
-        require(user.beneficiaries[msg.sender], "Caller is not a beneficiary");
+        require(user.isBeneficiary[msg.sender], "Caller is not a beneficiary");
         uint amount = user.balance;
         user.balance = 0;
         (bool sent, ) = msg.sender.call{value: amount}("");
@@ -132,47 +133,16 @@ contract DeadMansSwitch {
     }
 
     /**
-     * @dev Gets the balance of the user.
-     * @param userAddress The address of the user.
-     * @return The balance of the user.
-     */
-    function getBalance(address userAddress) public view returns (uint) {
-        return users[userAddress].balance;
-    }
-
-    /**
-     * @dev Gets the last check-in time of the user.
-     * @param userAddress The address of the user.
-     * @return The last check-in time of the user.
-     */
-    function getLastCheckIn(address userAddress) public view returns (uint) {
-        return users[userAddress].lastCheckIn;
-    }
-
-    /**
-     * @dev Gets the check-in interval of the user.
-     * @param userAddress The address of the user.
-     * @return The check-in interval of the user.
-     */
-    function getCheckInInterval(
-        address userAddress
-    ) public view returns (uint) {
-        return users[userAddress].checkInInterval;
-    }
-
-    /**
      * @dev Gets to check if there is a beneficiary.
      * @param userAddress The address of the user.
      * @param beneficiary The address of the beneficiary.
-     * @return The check-in interval of the user.
+     * Requirements:
+     * - The beneficiary must be added.
      */
-    function isBeneficiary(
+    function beneficiaryLookup(
         address userAddress,
         address beneficiary
     ) public view returns (bool) {
-        return users[userAddress].beneficiaries[beneficiary];
+        return users[userAddress].isBeneficiary[beneficiary];
     }
-
-    receive() external payable {}
-    fallback() external payable {}
 }
