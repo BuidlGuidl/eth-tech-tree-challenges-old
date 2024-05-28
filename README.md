@@ -30,7 +30,7 @@ foundryup
 
 ## Challenge Description
 
-Amidst a backdrop where centralized control over capital resouces stifles innovation and freedom, your challenge is to write a smart contract named "EthStreaming". This contract will empower authorized users to manage Ethereum assets in a decentralized manner—ensuring that the flow of resources is as continuous and uninterrupted as the ideals we uphold. Designated accounts will be permitted to withdraw predefined amounts of ETH, dictated by the passage of time since their last withrawal.
+Amidst a backdrop where centralized control over capital resouces stifles innovation and freedom, your challenge is to write a smart contract named "EthStreaming". This contract will empower authorized users to manage Ethereum assets in a decentralized manner—ensuring that the flow of resources is as continuous and uninterrupted as the ideals we uphold. Designated accounts will be permitted to withdraw predefined amounts of ETH, dictated by the passage of time since their last withdrawal.
 
 As the architect, you will start this endeavor in `packages/foundry/contracts/EthStreaming.sol` where you will craft a new paradigm where freedom and resources flow hand in hand.
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 import {EthStreaming} from "contracts/EthStreaming.sol";
 
 contract EthStreamingTest is Test {
@@ -101,13 +101,11 @@ contract EthStreamingTest is Test {
         emit EthStreaming.Withdraw(ALICE, STREAM_CAP);
         ethStreaming.maxWithdraw();
         uint256 aliceBalance = address(ALICE).balance;
-        console.log("Alice's balance: ", aliceBalance);
         assertEq(aliceBalance, STREAM_CAP);
     }
 
     /**
      * An account that has recently withdrawn from stream should be able to withdraw partial cap before waiting the full frequency
-     * @notice TODO WIP
      */
     function testValidAccountPartialWithdrawal() public {
         vm.prank(ALICE);

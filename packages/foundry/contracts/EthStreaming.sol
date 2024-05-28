@@ -3,7 +3,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {console} from "forge-std/console.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract EthStreaming is Ownable {
     /***** ERRORS *****/
@@ -39,7 +39,7 @@ contract EthStreaming is Ownable {
 
     /***** EXTERNAL FUNCTIONS *****/
     /**
-     * @dev This is a special fallback function allows the contract to receive ether 👉 https://solidity-by-example.org/fallback/
+     * @dev This special fallback function allows the contract to receive ether 👉 https://solidity-by-example.org/fallback/
      * The function also offers us opportunity to emit an event that will make it easier to track incoming funds
      * Requirements:
      * - Emit a `EthReceived` event with the address of the sender and the amount of ether sent
@@ -65,6 +65,10 @@ contract EthStreaming is Ownable {
      * Requirements:
      * - Revert if there is not enough funds in the contract
      * - Revert if the sender does not have a stream
+     * - Transfer the amount to the sender
+     * - Revert if the transfer is unsuccessful
+     * - Update the StreamConfig of the sender with the time of transaction execution
+     * - Emit a `Withdraw` event with the address of the sender and the amount withdrawn
      */
     function maxWithdraw() public hasStream(msg.sender) {
         uint256 amount = unlockedAmount(msg.sender);
@@ -80,7 +84,6 @@ contract EthStreaming is Ownable {
     }
 
     /***** VIEW FUNCTIONS *****/
-
     /**
      * @dev This function calculates the amount that can be withdrawn from a stream at a given time
      * @param account account to check unlocked amount
@@ -105,13 +108,14 @@ contract EthStreaming is Ownable {
     /**
      * @dev This is a getter function for the stream registry
      * @param account account to get stream for
+     * @return stream configuration for the given account
      * Requirements:
      * - Revert if the account does not have a stream
      * - Returns the stream configuration for the given account
      */
     function getStream(
         address account
-    ) public view hasStream(account) returns (StreamConfig memory) {
+    ) public view hasStream(account) returns (StreamConfig memory stream) {
         return s_streamRegistry[account];
     }
 }
