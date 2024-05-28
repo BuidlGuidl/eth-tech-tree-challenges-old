@@ -101,6 +101,7 @@ contract DeadMansSwitchTest is Test {
         vm.expectRevert();
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
+
     // Test that non-beneficiaries cannot withdraw funds before the interval has passed
     function testWithdrawAsNonBeneficiaryBeforeInterval() public {
         deadMansSwitch.deposit{value: ONE_THOUSAND}();

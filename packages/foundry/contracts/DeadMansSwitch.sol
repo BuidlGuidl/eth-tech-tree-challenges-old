@@ -83,8 +83,8 @@ contract DeadMansSwitch {
      * @param beneficiary The address of the beneficiary to remove.
      * Requirements:
      * - The beneficiary must be already added.
-     * - Emits a `BeneficiaryRemoved` event with the caller's address and the beneficiary address.
      * - The beneficiary is removed
+     * - Emits a `BeneficiaryRemoved` event with the caller's address and the beneficiary address.
      */
     function removeBeneficiary(address beneficiary) public {
         User storage user = users[msg.sender];
@@ -110,10 +110,10 @@ contract DeadMansSwitch {
     }
 
     /**
-     * @dev Allows isBeneficiary to withdraw the user's funds if the check-in interval has passed.
+     * @dev Allows beneficiaries to withdraw the user's funds if the check-in interval has passed.
      * @param userAddress The address of the user.
      * Requirements:
-     * - The caller must be one of the user's isBeneficiary.
+     * - The caller must be one of the user's beneficiaries.
      * - The user's check-in interval must have passed without a check-in.
      * - The withdrawal must be successful and the Ether must be sent to the caller's address.
      * - Emits a `Withdrawal` event with the beneficiary's address and the amount of Ether withdrawn.
@@ -136,8 +136,9 @@ contract DeadMansSwitch {
      * @dev Gets to check if there is a beneficiary.
      * @param userAddress The address of the user.
      * @param beneficiary The address of the beneficiary.
+     * @return boolean representing whether the address is a beneficiary
      * Requirements:
-     * - The beneficiary must be added.
+     * - Returns true if the provided beneficiary is a given userAddresses beneficiary, otherwise false
      */
     function beneficiaryLookup(
         address userAddress,
