@@ -12,17 +12,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract Multisend {
 
-    /// Events
-    /**
-     * @notice Successful transfer of ETH has been carried out.
-     */
-    event SuccessfulETHTransfer(address indexed _sender, address[] indexed _receivers, uint256[]  _amounts);
-
-    /**
-     * @notice Successful transfer of Tokens has been carried out.
-     */
-    event SuccessfulTokenTransfer(address indexed _sender, address[] indexed _receivers, uint256[] _amounts);
-
     /// Errors
     /**
      * @notice Sender requires enough ETH for the transaction.
@@ -33,6 +22,17 @@ contract Multisend {
      * @notice Sender requires enough Tokens for the transaction.
      */
     error Multisend__SenderNotEnoughTokens(address _sender);
+    
+    /// Events
+    /**
+     * @notice Successful transfer of ETH has been carried out.
+     */
+    event SuccessfulETHTransfer(address indexed _sender, address[] indexed _receivers, uint256[]  _amounts);
+
+    /**
+     * @notice Successful transfer of Tokens has been carried out.
+     */
+    event SuccessfulTokenTransfer(address indexed _sender, address[] indexed _receivers, uint256[] _amounts);
 
     /**
      * @notice Array params must be the same length.
@@ -47,14 +47,13 @@ contract Multisend {
      * @param _amounts Number of ETH to send to specified recipients.
      * @dev Do we want to have a log of the recipients in memory so we don't have repeat recipients? How would we do that? I'd think we'd just keep a temporary storage of the addresses and check against it if the address has repeated.
      */
-    function sendETH(address payable[] memory _recipients, uint256[] memory _amounts) public payable {
+    function sendETH(address payable[] memory _recipients, uint256[] memory _amounts) external payable {
         // ensure that arrays match in length
         uint256 recipientArrayLength = _recipients.length;
         uint256 amountsArrayLength = _amounts.length;
 
         if (_recipients.length != _amounts.length) revert Multisend__ParamArraysNotEqualLength(recipientArrayLength, amountsArrayLength);
-
-        console2.log("Contract ETH balance: %s", address(this).balance);
+        
         // Go through the address array and send ETH amounts as you go through
         for (uint i = 0; i < recipientArrayLength; i++) {
             if(address(this).balance < _amounts[i]) revert Multisend__SenderNotEnoughETH(msg.sender); 
@@ -70,7 +69,7 @@ contract Multisend {
      * @param _token Specified ERC20 to transfer.
      * @dev What if the tokens don't abide by ERC20? Well it would revert when trying to call an ERC20 function. This contract doesn't check that we aren't dealing with scam / rug pull ERC20s sadly, it simply just transfers ERC20s.
      */
-    function sendTokens(address payable[] memory _recipients, uint256[] memory _amounts, address _token) public {
+    function sendTokens(address payable[] memory _recipients, uint256[] memory _amounts, address _token) external {
         // ensure that arrays match in length
         uint256 recipientArrayLength = _recipients.length;
         uint256 amountsArrayLength = _amounts.length;
@@ -78,22 +77,11 @@ contract Multisend {
         if (_recipients.length != _amounts.length) revert Multisend__ParamArraysNotEqualLength(recipientArrayLength, amountsArrayLength);
 
         IERC20 token = IERC20(_token);
-        uint256 amounts;
 
-        for (uint i = 0; i < amountsArrayLength; i++) {
-            amounts += _amounts[i];
-        }
-        token.approve(address(this), amounts);
-
-        // Go through the address array and send ETH amounts as you go through
+        // Go through the address array and send token amounts as you go through
         for (uint i = 0; i < recipientArrayLength; i++) {
             if(token.balanceOf(msg.sender) < _amounts[i]) revert Multisend__SenderNotEnoughTokens(msg.sender); 
             token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
-    }
-
-    receive() external payable {}
-    fallback() external payable {
-        // Do nothing, just accept the Ether
     }
 }
