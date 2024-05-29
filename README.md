@@ -1,8 +1,10 @@
-# Template For Challenge - ETH Tech Tree
+# Multisend Challenge - ETH Tech Tree
 *--Change the above "Template For Challenge" to the challenge name--*
 *--Add a paragraph sized story that pulls in the challenger to their mission--*
 
+Once we finish these methods we will have you deploy your contract on a testnet to be checked against our foundry tests that autograde your submission.
 
+It already has an object in challenges.json which has the name field 'multisend'.
 *--End of story section--*
 
 ## Contents
@@ -28,7 +30,44 @@ foundryup
 
 ## Challenge Description
 *--Edit this section--*
-Write challenge description here...
+This challenge will require the user to build a contract that is capable of sending tokens or ETH to multiple provided addresses. The contract design uses two separate methods, one for sending ETH and one for sending any ERC20 token. Each method will be provided an array of addresses and an array of amounts. The ERC20 method will also receive the token address.
+
+The challenge is broken down into two main parts:
+
+1. `sendETH()`
+2. `sendTokens()`
+
+Each of the above functions have natspec that outlines the requirements for the params and function. We will use these to help guide us through.
+
+## ⛳️ **Checkpoint 1: `sendETH()`** 🤑
+
+<!-- ![image]() -->
+
+
+> 💡 _Hints:_ 
+
+> 💡💡 _More Hints:_ 
+
+<details markdown='1'><summary>🦉 Guided Explanation</summary>
+
+<!-- TODO: Insert explanation here -->
+
+<details markdown='1'><summary>👩🏽‍🏫 Solution Code</summary>
+
+```
+
+<!-- TODO: Add function solution here -->
+
+```
+
+</details>
+
+❗️
+
+### 🥅 Goals / Checks
+
+- [ ] 🤔 
+- [ ] 💃 
 
 Here are some helpful references:
 *Replace with real resource links if any*
@@ -36,7 +75,7 @@ Here are some helpful references:
 - [two](buidlguidl.com)
 - [three](buidlguidl.com)
 
-*--End of challenge specific section--*
+*-- TODO: DELETE THIS LINE WHEN DONE - End of challenge specific section--*
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
