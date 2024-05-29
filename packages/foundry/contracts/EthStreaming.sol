@@ -5,39 +5,60 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {console2} from "forge-std/console2.sol";
 
+/**
+ * @title ETH Streaming Contract
+ * @author Buidl Guidl Labs
+ * @notice The natspec paired with the README will help guide you towards completing this challenge
+ * @dev The goal for this challenge is to write contract that allows for the owner of the contract to add
+ * accounts that have permission to withdraw up to a certain amount of ETH from the contract every 30 days
+ */
 contract EthStreaming is Ownable {
-    /***** ERRORS *****/
+    ///////////////////
+    // Errors
+    ///////////////////
     error InsufficentFunds();
     error NoActiveStream();
     error NotEnoughStreamUnlocked();
     error TransferFailed();
 
-    /***** TYPES *****/
+    ///////////////////
+    // Types
+    ///////////////////
     struct StreamConfig {
         uint256 cap;
         uint256 timeOfLastWithdrawal;
     }
 
-    /***** MODIFIERS *****/
-    modifier hasStream(address account) {
-        StreamConfig storage builderStream = s_streamRegistry[account];
-        if (builderStream.cap == 0) revert NoActiveStream();
-        _;
-    }
+    ///////////////////
+    // State Variables
+    ///////////////////
+    mapping(address => StreamConfig) private streamRegistry;
+    uint256 public immutable frequency = 2592000; // How long until stream is fully unlocked after last withdrawal
 
-    /***** STATE VARIABLES *****/
-    mapping(address => StreamConfig) private s_streamRegistry;
-    uint256 public immutable i_frequency = 2592000; // How long until stream is fully unlocked after last withdrawal
-
-    /***** EVENTS *****/
+    ///////////////////
+    // Events
+    ///////////////////
     event Withdraw(address indexed to, uint256 amount);
     event AddStream(address indexed to, uint256 cap);
     event EthReceived(address indexed from, uint256 amount);
 
-    /***** FUNCTIONS *****/
+    ///////////////////
+    // Modifiers
+    ///////////////////
+    modifier hasStream(address account) {
+        StreamConfig storage builderStream = streamRegistry[account];
+        if (builderStream.cap == 0) revert NoActiveStream();
+        _;
+    }
+
+    ///////////////////
+    // Functions
+    ///////////////////
     constructor() {}
 
-    /***** EXTERNAL FUNCTIONS *****/
+    ///////////////////
+    // External Functions
+    ///////////////////
     /**
      * @dev This special fallback function allows the contract to receive ether 👉 https://solidity-by-example.org/fallback/
      * The function also offers us opportunity to emit an event that will make it easier to track incoming funds
@@ -48,6 +69,9 @@ contract EthStreaming is Ownable {
         emit EthReceived(msg.sender, msg.value);
     }
 
+    ///////////////////
+    // Public Functions
+    ///////////////////
     /**
      * @param account new account allowed allowed to withdraw from a stream
      * @param cap max amount (in wei) that can be withdrawn from stream at a time
@@ -56,7 +80,7 @@ contract EthStreaming is Ownable {
      * - Emits a `AddStream` event with the address of the account receiving the stream and the cap amount for the stream
      */
     function addStream(address account, uint256 cap) public onlyOwner {
-        s_streamRegistry[account] = StreamConfig(cap, 0);
+        streamRegistry[account] = StreamConfig(cap, 0);
         emit AddStream(account, cap);
     }
 
@@ -77,13 +101,15 @@ contract EthStreaming is Ownable {
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         if (!success) revert TransferFailed();
 
-        StreamConfig storage builderStream = s_streamRegistry[msg.sender];
+        StreamConfig storage builderStream = streamRegistry[msg.sender];
         builderStream.timeOfLastWithdrawal = block.timestamp;
 
         emit Withdraw(msg.sender, amount);
     }
 
-    /***** VIEW FUNCTIONS *****/
+    //////////////////////////////
+    // View Functions
+    //////////////////////////////
     /**
      * @dev This function calculates the amount that can be withdrawn from a stream at a given time
      * @param account account to check unlocked amount
@@ -96,13 +122,13 @@ contract EthStreaming is Ownable {
     function unlockedAmount(
         address account
     ) public view hasStream(account) returns (uint256 amount) {
-        StreamConfig storage stream = s_streamRegistry[account];
+        StreamConfig storage stream = streamRegistry[account];
 
         uint256 timeSinceLastWithdrawal = block.timestamp -
             stream.timeOfLastWithdrawal;
-        if (timeSinceLastWithdrawal > i_frequency) return stream.cap;
+        if (timeSinceLastWithdrawal > frequency) return stream.cap;
 
-        amount = (stream.cap * timeSinceLastWithdrawal) / i_frequency;
+        amount = (stream.cap * timeSinceLastWithdrawal) / frequency;
     }
 
     /**
@@ -116,6 +142,6 @@ contract EthStreaming is Ownable {
     function getStream(
         address account
     ) public view hasStream(account) returns (StreamConfig memory stream) {
-        return s_streamRegistry[account];
+        return streamRegistry[account];
     }
 }

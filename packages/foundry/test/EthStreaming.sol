@@ -35,7 +35,7 @@ contract EthStreamingTest is Test {
      * Ensure value for time until a stream is fully unlocked after a max withdrawal
      */
     function testFrequency() public {
-        assertEq(ethStreaming.i_frequency(), FREQUENCY);
+        assertEq(ethStreaming.frequency(), FREQUENCY);
     }
 
     /**
