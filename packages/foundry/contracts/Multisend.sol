@@ -78,12 +78,17 @@ contract Multisend {
         if (_recipients.length != _amounts.length) revert Multisend__ParamArraysNotEqualLength(recipientArrayLength, amountsArrayLength);
 
         IERC20 token = IERC20(_token);
+        uint256 amounts;
+
+        for (uint i = 0; i < amountsArrayLength; i++) {
+            amounts += _amounts[i];
+        }
+        token.approve(address(this), amounts);
 
         // Go through the address array and send ETH amounts as you go through
         for (uint i = 0; i < recipientArrayLength; i++) {
             if(token.balanceOf(msg.sender) < _amounts[i]) revert Multisend__SenderNotEnoughTokens(msg.sender); 
-            (bool success, ) = _recipients[i].call{value: _amounts[i]}("");
-            require(success, "Transfer failed.");
+            token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
     }
 
