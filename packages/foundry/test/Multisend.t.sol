@@ -17,7 +17,7 @@ contract MultisendTest is Test {
     /**
      * @notice Successful transfer of ETH has been carried out.
      */
-    event SuccessfulETHTransfer(address indexed _sender, address[] indexed _receivers, uint256[]  _amounts);
+    event SuccessfulETHTransfer(address indexed _sender, address payable[] indexed _receivers, uint256[]  _amounts);
 
     /**
      * @notice Successful transfer of Tokens has been carried out.
@@ -46,6 +46,8 @@ contract MultisendTest is Test {
 
     // array params for happy path tests
     address payable[] recipients;
+    address[] tokenRecipients;
+
     uint256[] amounts = [1e18, 2e18];
     uint256[] tooHighAmounts = [defaultBalance + 1, defaultBalance + 1];
     uint256[] biggerAmountsArray = [1e18, 2e18, 1e18];
@@ -78,6 +80,7 @@ contract MultisendTest is Test {
         luffy = createUser("luffy");
 
         recipients = [luffy, zoro];
+        tokenRecipients = [luffy, zoro];
 
         multisend = new Multisend();
     }
@@ -95,6 +98,9 @@ contract MultisendTest is Test {
         // zoro sends dai and weth
         recipients = [luffy, nami];
         vm.startPrank(zoro);
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulETHTransfer(zoro, recipients, amounts);
+
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
         vm.stopPrank;
 
@@ -118,8 +124,13 @@ contract MultisendTest is Test {
         dai.approve(address(multisend), amountsApproved);
         weth.approve(address(multisend), amountsApproved);
 
-        multisend.sendTokens(recipients, amounts, address(dai));
-        multisend.sendTokens(recipients, amounts, address(weth));
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(nami, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(dai));
+
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(nami, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(weth));
         vm.stopPrank;
 
         assertEq(dai.balanceOf(nami), namiExpectedBalance1);
@@ -129,7 +140,7 @@ contract MultisendTest is Test {
         assertEq(dai.balanceOf(zoro), zoroExpectedBalance1);
         assertEq(weth.balanceOf(zoro), zoroExpectedBalance1);
 
-        recipients = [luffy, nami];
+        tokenRecipients = [luffy, nami];
 
         // zoro sends dai and weth
         vm.startPrank(zoro);
@@ -137,8 +148,13 @@ contract MultisendTest is Test {
         dai.approve(address(multisend), amountsApproved);
         weth.approve(address(multisend), amountsApproved);
 
-        multisend.sendTokens(recipients, amounts, address(dai));
-        multisend.sendTokens(recipients, amounts, address(weth));
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(zoro, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(dai));
+
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(zoro, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(weth));
         vm.stopPrank;
 
         assertEq(dai.balanceOf(nami), namiExpectedBalance2);
@@ -152,7 +168,7 @@ contract MultisendTest is Test {
     function testSendTokensSameRecipients() external {
         console.log("NAMI ETH BALANCE START :", dai.balanceOf(nami));
         // nami sends dai and weth
-        recipients = [luffy, luffy];
+        tokenRecipients = [luffy, luffy];
 
         vm.startPrank(nami);
 
@@ -164,8 +180,13 @@ contract MultisendTest is Test {
         dai.approve(address(multisend), amountsApproved);
         weth.approve(address(multisend), amountsApproved);
 
-        multisend.sendTokens(recipients, amounts, address(dai));
-        multisend.sendTokens(recipients, amounts, address(weth));
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(nami, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(dai));
+
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulTokenTransfer(nami, tokenRecipients, amounts);
+        multisend.sendTokens(tokenRecipients, amounts, address(weth));
         vm.stopPrank;
 
         assertEq(dai.balanceOf(nami), namiExpectedBalance1);
@@ -180,6 +201,9 @@ contract MultisendTest is Test {
         recipients = [luffy, luffy];
 
         vm.startPrank(nami);
+        vm.expectEmit(true, true, false, true);
+        emit SuccessfulETHTransfer(nami, recipients, amounts);
+
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
         vm.stopPrank;
 
@@ -202,7 +226,7 @@ contract MultisendTest is Test {
         weth.approve(address(multisend), defaultBalance + 1);
 
         vm.expectRevert(bytes(abi.encodeWithSelector(Multisend.Multisend__SenderNotEnoughTokens.selector, nami)));
-        multisend.sendTokens(recipients, tooHighAmounts, address(dai));
+        multisend.sendTokens(tokenRecipients, tooHighAmounts, address(dai));
         vm.stopPrank;
     }
 
@@ -213,7 +237,7 @@ contract MultisendTest is Test {
         weth.approve(address(multisend), defaultBalance + 1);
 
         vm.expectRevert(bytes(abi.encodeWithSelector(Multisend.Multisend__ParamArraysNotEqualLength.selector, 2, 3)));
-        multisend.sendTokens(recipients, biggerAmountsArray, address(dai));
+        multisend.sendTokens(tokenRecipients, biggerAmountsArray, address(dai));
         vm.stopPrank;
 
         vm.expectRevert(bytes(abi.encodeWithSelector(Multisend.Multisend__ParamArraysNotEqualLength.selector, 2, 3)));

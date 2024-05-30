@@ -23,23 +23,23 @@ contract Multisend {
      */
     error Multisend__SenderNotEnoughTokens(address _sender);
     
-    /// Events
-    /**
-     * @notice Successful transfer of ETH has been carried out.
-     */
-    event SuccessfulETHTransfer(address indexed _sender, address[] indexed _receivers, uint256[]  _amounts);
-
-    /**
-     * @notice Successful transfer of Tokens has been carried out.
-     */
-    event SuccessfulTokenTransfer(address indexed _sender, address[] indexed _receivers, uint256[] _amounts);
-
     /**
      * @notice Array params must be the same length.
      * @param _recipientArrayLength Length of the _addresses array passed in from function caller.
      * @param _amountsArrayLength Length of the _amounts array passed in from function caller.
      */
     error Multisend__ParamArraysNotEqualLength(uint256 _recipientArrayLength, uint256 _amountsArrayLength);
+
+    /// Events
+    /**
+     * @notice Successful transfer of ETH has been carried out.
+     */
+    event SuccessfulETHTransfer(address indexed _sender, address payable[] indexed _receivers, uint256[]  _amounts);
+
+    /**
+     * @notice Successful transfer of Tokens has been carried out.
+     */
+    event SuccessfulTokenTransfer(address indexed _sender, address[] indexed _receivers, uint256[] _amounts);
 
     /**
      * @notice Send ETH amounts to one or more recipients.
@@ -60,6 +60,8 @@ contract Multisend {
             (bool success, ) = _recipients[i].call{value: _amounts[i]}("");
             require(success, "Transfer failed.");
         }
+
+        emit SuccessfulETHTransfer(msg.sender, _recipients, _amounts);
     }
 
     /**
@@ -69,7 +71,7 @@ contract Multisend {
      * @param _token Specified ERC20 to transfer.
      * @dev What if the tokens don't abide by ERC20? Well it would revert when trying to call an ERC20 function. This contract doesn't check that we aren't dealing with scam / rug pull ERC20s sadly, it simply just transfers ERC20s.
      */
-    function sendTokens(address payable[] memory _recipients, uint256[] memory _amounts, address _token) external {
+    function sendTokens(address[] memory _recipients, uint256[] memory _amounts, address _token) external {
         // ensure that arrays match in length
         uint256 recipientArrayLength = _recipients.length;
         uint256 amountsArrayLength = _amounts.length;
@@ -83,5 +85,8 @@ contract Multisend {
             if(token.balanceOf(msg.sender) < _amounts[i]) revert Multisend__SenderNotEnoughTokens(msg.sender); 
             token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
+
+        emit SuccessfulTokenTransfer(msg.sender, _recipients, _amounts);
+
     }
 }
