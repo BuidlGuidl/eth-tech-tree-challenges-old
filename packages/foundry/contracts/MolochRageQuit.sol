@@ -89,7 +89,21 @@ contract MolochRageQuit is Ownable {
      * - `shareAmount` must be greater than 0.
      * Emits a `ProposalCreated` event.
      */
-    function propose(uint256 ethAmount, uint256 shareAmount) external {}
+    function propose(uint256 ethAmount, uint256 shareAmount) external {
+        if (ethAmount == 0 || shareAmount == 0) {
+            revert InvalidSharesAmount();
+        }
+
+        proposalCount++;
+        proposals[proposalCount] = Proposal(
+            msg.sender,
+            ethAmount,
+            shareAmount,
+            false
+        );
+
+        emit ProposalCreated(proposalCount, msg.sender, ethAmount, shareAmount);
+    }
 
     /**
      * @dev Approve a proposal.
@@ -99,7 +113,15 @@ contract MolochRageQuit is Ownable {
      * - The proposal must not be already approved.
      * Emits a `ProposalApproved` event.
      */
-    function approveProposal(uint256 proposalId) external onlyMember {}
+    function approveProposal(uint256 proposalId) external onlyMember {
+        Proposal storage proposal = proposals[proposalId];
+        if (proposal.approved) {
+            revert AlreadyApproved();
+        }
+
+        proposal.approved = true;
+        emit ProposalApproved(proposalId, msg.sender);
+    }
 
     /**
      * @dev Exchange ETH for shares after approval.
@@ -110,7 +132,21 @@ contract MolochRageQuit is Ownable {
      * - The amount of ETH sent must match the proposal's ETH amount.
      * Emits a `SharesExchanged` event.
      */
-    function exchangeShares(uint256 proposalId) external payable {}
+    function exchangeShares(uint256 proposalId) external payable {
+        Proposal storage proposal = proposals[proposalId];
+        if (proposal.proposer != msg.sender || !proposal.approved) {
+            revert ProposalNotApproved();
+        }
+        if (msg.value < proposal.ethAmount) {
+            revert InsufficientETH();
+        }
+
+        totalEth += msg.value;
+        totalShares += proposal.shareAmount;
+        shares[msg.sender] += proposal.shareAmount;
+
+        emit SharesExchanged(msg.sender, msg.value, proposal.shareAmount);
+    }
 
     /**
      * @dev Rage quit and exchange shares for ETH.
@@ -118,5 +154,22 @@ contract MolochRageQuit is Ownable {
      * - The caller must have shares.
      * Emits a `RageQuit` event.
      */
-    function rageQuit() external {}
+    function rageQuit() external {
+        uint256 memberShares = shares[msg.sender];
+        if (memberShares == 0) {
+            revert InsufficientShares();
+        }
+
+        uint256 ethAmount = (memberShares * totalEth) / totalShares;
+        totalShares -= memberShares;
+        totalEth -= ethAmount;
+        shares[msg.sender] = 0;
+
+        (bool sent, ) = msg.sender.call{value: ethAmount}("");
+        if (!sent) {
+            revert ReentrancyDetected();
+        }
+
+        emit RageQuit(msg.sender, memberShares, ethAmount);
+    }
 }
