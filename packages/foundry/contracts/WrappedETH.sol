@@ -3,11 +3,31 @@ pragma solidity >=0.8.0 <0.9.0;
 import { console2 } from "forge-std/console2.sol";
 
 contract WrappedETH {
+    ///////////////////
+    // Errors
+    //////////////////
+    error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed);
+    error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
+
+    error InsufficientWETHBalance(address withdrawer, uint256 balance, uint256 needed);
+    error FailedToSendEther(address recipient, uint256 amount);
+
+    ///////////////////
+    // State Variables
+    //////////////////
     // ERC20 Standard methods for token metadata
     string public name = "Wrapped Ether";
     string public symbol = "WETH";
     uint8 public decimals = 18;
 
+    // ERC20 Standard Interface mappings
+    mapping(address => uint) public balanceOf;
+    mapping(address => mapping(address => uint)) public allowance;
+
+
+    ///////////////////
+    //  Events
+    //////////////////
     // ERC20 Standard Interface Events
     event Approval(address indexed owner, address indexed spender, uint amount);
     event Transfer(address indexed from, address indexed to, uint amount);
@@ -16,10 +36,9 @@ contract WrappedETH {
     event Deposit(address indexed owner, uint amount);
     event Withdrawal(address indexed owner, uint amount);
 
-    // ERC20 Standard Interface mappings
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping(address => uint)) public allowance;
-
+    ///////////////////
+    //  Functions
+    //////////////////
     /**
      * @dev Deposits Ether into the contract.
      * @notice This function allows users to deposit Ether into the contract.
@@ -37,15 +56,15 @@ contract WrappedETH {
      * @dev Allows the caller to withdraw a specified amount of wrapped Ether (WETH) from their balance.
      * @param amount The amount of wrapped Ether to withdraw.
      * Requirements:
-     * - The caller must have a balance of at least `amount` wrapped Ether.
-     * - The withdrawal must be successful and the Ether must be sent to the caller's address.
+     * - The caller must have a balance of at least `amount` wrapped Ether or revert with InsufficientWETHBalance.
+     * - The withdrawal must be successful and the Ether must be sent to the caller's address or revert with FailedToSendEther.
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
     function withdraw(uint amount) public {
-        require(balanceOf[msg.sender] >= amount);
+        if (balanceOf[msg.sender] < amount) revert InsufficientWETHBalance(msg.sender, balanceOf[msg.sender], amount);
         balanceOf[msg.sender] -= amount;
         (bool sent, ) = msg.sender.call{value: amount}("");
-        require(sent, "Failed to send Ether");
+        if (!sent) revert FailedToSendEther(msg.sender, amount);
         emit Withdrawal(msg.sender, amount);
     }
 
@@ -84,8 +103,8 @@ contract WrappedETH {
      * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The from address must have a balance of at least `amount` tokens.
-     * - The from address must have approved the caller to spend at least `amount` tokens.
+     * - The from address must have a balance of at least `amount` tokens or revert with ERC20InsufficientBalance.
+     * - The from address must have approved the caller to spend at least `amount` tokens or revert with ERC20InsufficientAllowance.
      * - Emits a `Transfer` event with the caller's address, the to address, and the amount of tokens approved.
      */
     function transferFrom(
@@ -93,12 +112,12 @@ contract WrappedETH {
         address to,
         uint amount
     ) public returns (bool) {
-        require(balanceOf[from] >= amount);
+        if (balanceOf[from] < amount) revert ERC20InsufficientBalance(from, balanceOf[from], amount);
 
         if (
             from != msg.sender && allowance[from][msg.sender] != type(uint256).max
         ) {
-            require(allowance[from][msg.sender] >= amount);
+            if (allowance[from][msg.sender] < amount) revert ERC20InsufficientAllowance(msg.sender, allowance[from][msg.sender], amount);
             allowance[from][msg.sender] -= amount;
         }
 
@@ -117,7 +136,7 @@ contract WrappedETH {
      * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The caller must have a balance of at least `amount` tokens.
+     * - The caller must have a balance of at least `amount` tokens or revert with ERC20InsufficientBalance.
      * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
      */
     function transfer(address to, uint amount) public returns (bool) {

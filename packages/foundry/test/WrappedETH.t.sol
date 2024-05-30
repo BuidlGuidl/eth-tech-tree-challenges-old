@@ -30,8 +30,32 @@ contract WrappedETHTest is Test {
         wrappedETH.deposit{value: ONE_THOUSAND}();
         wrappedETH.withdraw(ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
-        assertEq(wrappedETH.balanceOf(address(wrappedETH)), 0);
+        assertEq(address(wrappedETH).balance, 0);
         assertEq(NON_CONTRACT_USER.balance, ONE_THOUSAND);
+    }
+
+    function testWithdrawInsufficientBalance() public {
+        vm.startPrank(NON_CONTRACT_USER);
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.InsufficientWETHBalance.selector, NON_CONTRACT_USER, ONE_THOUSAND, ONE_THOUSAND + 1)));
+        wrappedETH.withdraw(ONE_THOUSAND + 1);
+        assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), ONE_THOUSAND);
+        assertEq(address(wrappedETH).balance, ONE_THOUSAND);
+        assertEq(NON_CONTRACT_USER.balance, 0);
+    }
+
+    function testWithdrawFailedToSendEther() public {
+        address CONTRACT_NOT_PAYABLE = vm.addr(3);
+        vm.etch(CONTRACT_NOT_PAYABLE, "function() payable { revert(); }");
+        vm.startPrank(CONTRACT_NOT_PAYABLE);
+        vm.deal(CONTRACT_NOT_PAYABLE, ONE_THOUSAND);
+        wrappedETH.deposit{value: ONE_THOUSAND}();
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.FailedToSendEther.selector, CONTRACT_NOT_PAYABLE, ONE_THOUSAND)));
+        wrappedETH.withdraw(ONE_THOUSAND);
+        assertEq(wrappedETH.balanceOf(CONTRACT_NOT_PAYABLE), ONE_THOUSAND);
+        assertEq(address(wrappedETH).balance, ONE_THOUSAND);
+        assertEq(CONTRACT_NOT_PAYABLE.balance, 0);
     }
 
     function testTotalSupply() public {
@@ -53,7 +77,7 @@ contract WrappedETHTest is Test {
 
     function testTransferWithInsufficientBalance() public {
         wrappedETH.deposit{value: 999}();
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.ERC20InsufficientBalance.selector, address(this), 999, ONE_THOUSAND)));
         wrappedETH.transfer(NON_CONTRACT_USER, ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 999);
         assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
@@ -81,8 +105,8 @@ contract WrappedETHTest is Test {
     function testTransferFromWithoutAllowance() public {
         wrappedETH.deposit{value: ONE_THOUSAND}();
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert();
-        wrappedETH.transferFrom(vm.addr(1), NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.ERC20InsufficientAllowance.selector, NON_CONTRACT_USER, 0, ONE_THOUSAND)));
+        wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
     }
@@ -91,7 +115,7 @@ contract WrappedETHTest is Test {
         wrappedETH.deposit{value: ONE_THOUSAND}();
         wrappedETH.approve(NON_CONTRACT_USER, 500);
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.ERC20InsufficientAllowance.selector, NON_CONTRACT_USER, 500, ONE_THOUSAND)));
         wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(THIS_CONTRACT), ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
@@ -101,7 +125,7 @@ contract WrappedETHTest is Test {
         wrappedETH.deposit{value: 500}();
         wrappedETH.approve(NON_CONTRACT_USER, ONE_THOUSAND);
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(WrappedETH.ERC20InsufficientBalance.selector, address(this), 500, ONE_THOUSAND)));
         wrappedETH.transferFrom(THIS_CONTRACT, NON_CONTRACT_USER, ONE_THOUSAND);
         assertEq(wrappedETH.balanceOf(THIS_CONTRACT), 500);
         assertEq(wrappedETH.balanceOf(NON_CONTRACT_USER), 0);
