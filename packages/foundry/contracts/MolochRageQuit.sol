@@ -98,6 +98,9 @@ contract MolochRageQuit is Ownable {
      * Requirements:
      * - `ethAmount` must be greater than 0.
      * - `shareAmount` must be greater than 0.
+     * - should revert with `InvalidSharesAmount` if either `ethAmount` or `shareAmount` is 0.
+     * - Increment the proposal count.
+     * - Create a new proposal
      * Emits a `ProposalCreated` event.
      */
     function propose(uint256 ethAmount, uint256 shareAmount) external {
@@ -118,10 +121,16 @@ contract MolochRageQuit is Ownable {
      * @dev Vote on a proposal.
      * @param proposalId The ID of the proposal to vote on.
      * Requirements:
+     * - Revert with `ProposalNotFound` if the proposal does not exist.
+     * - Revert with `AlreadyVoted` if the caller has already voted on the proposal.
      * - Caller must be a member.
      * - Proposal must exist.
      * - Caller must not have already voted on the proposal.
+     * - Increment the proposal's vote count.
+     * - Mark the caller as having voted on the proposal.
+     * - If the proposal has enough votes, mark it as approved.
      * Emits a `Voted` event.
+     * Emits a `ProposalApproved` event if the proposal is approved.
      */
     function vote(uint256 proposalId) external onlyMember {
         Proposal storage proposal = proposals[proposalId];
