@@ -16,7 +16,7 @@ contract Governance {
         bytes32 id;
         string title;
         uint256 votingDeadline;
-        address creator
+        address creator;
     }
 
     // Token contract interface
@@ -69,8 +69,24 @@ contract Governance {
      * @param _title The title of the proposal
      * @return proposalId The unique ID of the newly created proposal
      */
-    function propose(string memory _title) external onlyMembers {
-        //
+    function propose(string memory _title) external onlyMembers returns(bytes32) {
+        // Generate a unique ID for the proposal using keccak256 hash
+        bytes32 proposalId = keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce));
+        nonce++;
+        uint256 votingDeadline = block.timestamp + votingPeriod;
+        // Create the new proposal
+        Proposal memory newProposal = Proposal({
+            id: proposalId,
+            title: _title,
+            votingDeadline: votingDeadline,
+            creator: msg.sender
+        });
+        // Save the proposal in the mapping
+        proposals[proposalId] = newProposal;
+
+        emit ProposalCreated(proposalId, _title, votingDeadline, msg.sender);
+
+        return proposalId;
     }
 
     /**
@@ -80,7 +96,22 @@ contract Governance {
      * @param _support The choice of the voter (YEA, NAY, ABSTAIN)
      */
     function vote(bytes32 _proposalId, Choice _support) public onlyMembers {
-        //
+        require(uint(_support) <= uint(Choice.ABSTAIN), "Invalid choice");
+        require(block.timestamp < proposals[_proposalId].votingDeadline, "Voting has ended");
+        require(!hasVoted[_proposalId][msg.sender], "You have already voted");
+        uint256 voterWeight = voteToken.balanceOf(msg.sender);
+        // Update vote counts based on the support choice
+        if (_support == Choice.YEA) {
+            votesFor[_proposalId] += voterWeight;
+        } else if (_support == Choice.NAY) {
+            votesAgainst[_proposalId] += voterWeight;
+        }else {
+            votesAbstain[_proposalId] += voterWeight;
+        }
+        // Mark the voter as having voted and record their choice
+        hasVoted[_proposalId][msg.sender] = true;
+        choice[_proposalId][msg.sender] = _support;
+        emit VoteCasted(_proposalId, msg.sender, _support, voterWeight);
     }
 
     /**
@@ -88,8 +119,8 @@ contract Governance {
      * @param _proposalId The ID of the proposal to retrieve
      * @return The proposal struct containing its details
      */
-    function getProposal(bytes32 _proposalId) external view returns (Proposal) {
-        //
+    function getProposal(bytes32 _proposalId) external view returns (Proposal memory) {
+        return proposals[_proposalId];
     }
 
     /**
@@ -99,7 +130,7 @@ contract Governance {
      * @return The choice of the voter (YEA, NAY, ABSTAIN)
      */
     function getVote(bytes32 _proposalId, address _voter) external view returns (Choice) {
-        //
+        return choice[_proposalId][_voter];
     }
      
     /**
@@ -108,7 +139,7 @@ contract Governance {
      * @return The voting deadline of the proposal
      */
     function getVotingDeadline(bytes32 _proposalId) public view returns (uint256) {
-        //
+        return proposals[_proposalId].votingDeadline;
     }
 
     /**
@@ -117,6 +148,7 @@ contract Governance {
      * @return True if the votes in favor are greater than the votes against, otherwise false
      */
     function getResult(bytes32 _proposalId) public view returns (bool) {
-        //
+        require(block.timestamp >= proposals[_proposalId].votingDeadline, "Voting is still ongoing");
+        return votesFor[_proposalId] > votesAgainst[_proposalId];
     }
 }
