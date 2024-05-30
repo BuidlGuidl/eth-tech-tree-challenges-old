@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
 ////////////////////
@@ -17,6 +17,10 @@ error ZeroAddress();
 error InvalidSharesAmount();
 error AlreadyApproved();
 error ReentrancyDetected();
+error ProposalNotFound();
+error NotEnoughVotes();
+error AlreadyVoted();
+error MemberExists();
 
 ////////////////////
 // Contract
@@ -29,7 +33,9 @@ contract MolochRageQuit is Ownable {
         address proposer;
         uint256 ethAmount;
         uint256 shareAmount;
+        uint256 votes;
         bool approved;
+        mapping(address => bool) voted;
     }
 
     ///////////////////
@@ -38,6 +44,7 @@ contract MolochRageQuit is Ownable {
     uint256 public totalShares;
     uint256 public totalEth;
     uint256 public proposalCount;
+    uint256 public quorum;
     mapping(address => uint256) public shares;
     mapping(uint256 => Proposal) public proposals;
     mapping(address => bool) public members;
@@ -58,6 +65,9 @@ contract MolochRageQuit is Ownable {
         uint256 shareAmount
     );
     event RageQuit(address member, uint256 shareAmount, uint256 ethAmount);
+    event MemberAdded(address member);
+    event MemberRemoved(address member);
+    event Voted(uint256 proposalId, address voter);
 
     ///////////////////
     // Modifiers
@@ -72,8 +82,9 @@ contract MolochRageQuit is Ownable {
     ///////////////////
     // Constructor
     ///////////////////
-    constructor() {
+    constructor(uint256 _quorum) {
         members[msg.sender] = true;
+        quorum = _quorum;
     }
 
     ///////////////////
@@ -95,32 +106,41 @@ contract MolochRageQuit is Ownable {
         }
 
         proposalCount++;
-        proposals[proposalCount] = Proposal(
-            msg.sender,
-            ethAmount,
-            shareAmount,
-            false
-        );
+        Proposal storage proposal = proposals[proposalCount];
+        proposal.proposer = msg.sender;
+        proposal.ethAmount = ethAmount;
+        proposal.shareAmount = shareAmount;
 
         emit ProposalCreated(proposalCount, msg.sender, ethAmount, shareAmount);
     }
 
     /**
-     * @dev Approve a proposal.
-     * @param proposalId The ID of the proposal to approve.
+     * @dev Vote on a proposal.
+     * @param proposalId The ID of the proposal to vote on.
      * Requirements:
      * - Caller must be a member.
-     * - The proposal must not be already approved.
-     * Emits a `ProposalApproved` event.
+     * - Proposal must exist.
+     * - Caller must not have already voted on the proposal.
+     * Emits a `Voted` event.
      */
-    function approveProposal(uint256 proposalId) external onlyMember {
+    function vote(uint256 proposalId) external onlyMember {
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.approved) {
-            revert AlreadyApproved();
+        if (proposal.proposer == address(0)) {
+            revert ProposalNotFound();
+        }
+        if (proposal.voted[msg.sender]) {
+            revert AlreadyVoted();
         }
 
-        proposal.approved = true;
-        emit ProposalApproved(proposalId, msg.sender);
+        proposal.votes++;
+        proposal.voted[msg.sender] = true;
+
+        emit Voted(proposalId, msg.sender);
+
+        if (proposal.votes >= quorum) {
+            proposal.approved = true;
+            emit ProposalApproved(proposalId, msg.sender);
+        }
     }
 
     /**
@@ -171,5 +191,49 @@ contract MolochRageQuit is Ownable {
         }
 
         emit RageQuit(msg.sender, memberShares, ethAmount);
+    }
+
+    /**
+     * @dev Add a new member to the DAO.
+     * @param newMember The address of the new member.
+     * Requirements:
+     * - Only callable by the owner.
+     * - The address must not already be a member.
+     * Emits a `MemberAdded` event.
+     */
+    function addMember(address newMember) external onlyOwner {
+        if (members[newMember]) {
+            revert MemberExists();
+        }
+        members[newMember] = true;
+        emit MemberAdded(newMember);
+    }
+
+    /**
+     * @dev Remove a member from the DAO.
+     * @param member The address of the member to remove.
+     * Requirements:
+     * - Only callable by the owner.
+     * Emits a `MemberRemoved` event.
+     */
+    function removeMember(address member) external onlyOwner {
+        members[member] = false;
+        emit MemberRemoved(member);
+    }
+
+    /**
+     * @dev Withdraw ETH from the DAO.
+     * @param amount The amount of ETH to withdraw.
+     * Requirements:
+     * - Only callable by the owner.
+     */
+    function withdraw(uint256 amount) external onlyOwner {
+        if (amount > address(this).balance) {
+            revert InsufficientETH();
+        }
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        if (!sent) {
+            revert ReentrancyDetected();
+        }
     }
 }

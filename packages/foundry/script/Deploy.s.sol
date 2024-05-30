@@ -6,6 +6,7 @@ import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
+    uint256 public constant QUORUM = 1;
 
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();
@@ -15,7 +16,7 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        MolochRageQuit molochRageQuit = new MolochRageQuit();
+        MolochRageQuit molochRageQuit = new MolochRageQuit(QUORUM);
         console.logString(
             string.concat(
                 "MolochRageQuit deployed at: ",
