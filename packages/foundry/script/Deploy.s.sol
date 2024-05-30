@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/MolochRageQuit.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,11 +15,11 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+        MolochRageQuit molochRageQuit = new MolochRageQuit();
         console.logString(
             string.concat(
-                "Challenge deployed at: ",
-                vm.toString(address(challenge))
+                "MolochRageQuit deployed at: ",
+                vm.toString(address(molochRageQuit))
             )
         );
         vm.stopBroadcast();
