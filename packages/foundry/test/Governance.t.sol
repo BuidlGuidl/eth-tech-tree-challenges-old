@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../contracts/Challenge.sol";
+import "../contracts/Governance.sol";
 
-contract ChallengeTest is Test {
+contract GovernanceTest is Test {
     // Put tests here
 }
