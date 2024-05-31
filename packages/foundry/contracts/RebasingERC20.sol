@@ -49,7 +49,7 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     constructor() ERC20("RebasingToken", "RBT") {
         _totalSupply = 1000000 * 10 ** decimals();
-        _scalingFactor = 10 ** 18; // Initial scaling factor (1.0)
+        _scalingFactor = 1e18; // Initial scaling factor (1.0)
         _mint(msg.sender, _totalSupply);
         _initialSupply = _totalSupply;
     }
@@ -60,7 +60,7 @@ contract RebasingERC20 is ERC20, Ownable {
      * @return Number of tokens account has at this time.
      */
     function balanceOf(address account) public view override returns (uint256) {
-        return _balances[account] * _scalingFactor / (10 ** 18);
+        return _balances[account] * _scalingFactor / (1e18);
     }
 
     /**
@@ -97,7 +97,7 @@ contract RebasingERC20 is ERC20, Ownable {
             _totalSupply += uint256(supplyDelta);
         }
 
-        _scalingFactor = (10 ** 18) * _totalSupply / _initialSupply;
+        _scalingFactor = (1e18) * _totalSupply / _initialSupply;
 
         emit Rebase(epoch, _totalSupply);
         return _totalSupply;
@@ -117,14 +117,14 @@ contract RebasingERC20 is ERC20, Ownable {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         if (from == address(0)) {
             // Minting tokens
-            _balances[to] += amount * (10 ** 18) / _scalingFactor;
+            _balances[to] += amount * (1e18) / _scalingFactor;
         } else if (to == address(0)) {
             // Burning tokens
-            _balances[from] -= amount * (10 ** 18) / _scalingFactor;
+            _balances[from] -= amount * (1e18) / _scalingFactor;
         } else {
             // Transfer between accounts
-            _balances[from] -= amount * (10 ** 18) / _scalingFactor;
-            _balances[to] += amount * (10 ** 18) / _scalingFactor;
+            _balances[from] -= amount * (1e18) / _scalingFactor;
+            _balances[to] += amount * (1e18) / _scalingFactor;
         }
     }
 
