@@ -22,6 +22,11 @@ contract Multisend {
      * @notice Sender requires enough Tokens for the transaction.
      */
     error Multisend__SenderNotEnoughTokens(address _sender);
+
+    /**
+     * @notice ETH transfer needs to succeed.
+     */
+    error Multisend__ETHTransferFailed(address _sender);
     
     /**
      * @notice Array params must be the same length.
@@ -40,6 +45,7 @@ contract Multisend {
      * @notice Successful transfer of Tokens has been carried out.
      */
     event SuccessfulTokenTransfer(address indexed _sender, address[] indexed _receivers, uint256[] _amounts);
+    
 
     /**
      * @notice Send ETH amounts to one or more recipients.
@@ -61,7 +67,7 @@ contract Multisend {
         for (uint i = 0; i < recipientArrayLength; i++) {
             if(address(this).balance < _amounts[i]) revert Multisend__SenderNotEnoughETH(msg.sender); 
             (bool success, ) = _recipients[i].call{value: _amounts[i]}("");
-            require(success, "Transfer failed.");
+            if (!success) revert Multisend__ETHTransferFailed(msg.sender);
         }
 
         emit SuccessfulETHTransfer(msg.sender, _recipients, _amounts);

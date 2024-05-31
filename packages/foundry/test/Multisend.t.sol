@@ -84,21 +84,20 @@ contract MultisendTest is Test {
 
     function testSendETH() external {
         // nami sends luffy ETH
-        vm.startPrank(nami);
+        vm.prank(nami);
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
-        vm.stopPrank;
 
         assertEq(nami.balance, namiExpectedBalance1);
         assertEq(luffy.balance,luffyExpectedBalance1);
         assertEq(zoro.balance, zoroExpectedBalance1);
-        // zoro sends dai and weth
+
+        // zoro sends ETH
         recipients = [luffy, nami];
-        vm.startPrank(zoro);
+        vm.prank(zoro);
         vm.expectEmit(true, true, false, true);
         emit SuccessfulETHTransfer(zoro, recipients, amounts);
 
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
-        vm.stopPrank;
 
         assertEq(nami.balance, namiExpectedBalance2);
         assertEq(luffy.balance, luffyExpectedBalance2);
@@ -192,12 +191,11 @@ contract MultisendTest is Test {
         // nami sends luffy ETH
         recipients = [luffy, luffy];
 
-        vm.startPrank(nami);
+        vm.prank(nami);
         vm.expectEmit(true, true, false, true);
         emit SuccessfulETHTransfer(nami, recipients, amounts);
 
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
-        vm.stopPrank;
 
         // Should succeed still
         assertEq(nami.balance, namiExpectedBalance1);
@@ -205,10 +203,9 @@ contract MultisendTest is Test {
     }
 
     function testNotEnoughETH() external {
-        vm.startPrank(nami);
+        vm.prank(nami);
         vm.expectRevert(bytes(abi.encodeWithSelector(Multisend.Multisend__SenderNotEnoughETH.selector, nami)));
         multisend.sendETH{value: amounts[0]}(recipients, amounts);
-        vm.stopPrank;
     }
 
     function testNotEnoughTokens() external {
@@ -236,6 +233,16 @@ contract MultisendTest is Test {
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, biggerAmountsArray);
 
         vm.stopPrank;
+    }
+
+    function testUnsuccessfulETHTransfer() external {
+        address payable CONTRACT_NOT_PAYABLE = payable(vm.addr(3));
+        vm.etch(address(CONTRACT_NOT_PAYABLE), "function() payable { revert(); }");
+
+        recipients = [CONTRACT_NOT_PAYABLE, CONTRACT_NOT_PAYABLE];
+        vm.prank(nami);
+        vm.expectRevert(bytes(abi.encodeWithSelector(Multisend.Multisend__ETHTransferFailed.selector, nami)));
+        multisend.sendETH{value: amounts[0] + amounts[1]}(recipients, amounts);
     }
 
     // ========================================= HELPER FUNCTIONS =========================================

@@ -1,6 +1,6 @@
 # 🤝💸 Multisend Challenge - ETH Tech Tree 
 
-ETH and token transferrance are used all the time within the web3 space. Anyone can see it when they follow txs with NFTs, DeFi, RWAs, gaming, and more. As we can see in other challenges in this repo, this ability to have transparent, immutable transferance of value is one aspect that makes blockchain technology so powerful. Therefore it is important to understand how to construct these types of transactions, at their most basic levels. 👨🏻‍🏫
+ETH and token transference are used all the time within the web3 space. Anyone can see it when they follow txs with NFTs, DeFi, RWAs, gaming, and more. As we can see in other challenges in this repo, this ability to have transparent, immutable transference of value is one aspect that makes blockchain technology so powerful. Therefore it is important to understand how to construct these types of transactions, at their most basic levels. 👨🏻‍🏫
 
 Native assets to a blockchain, such as ETH for Ethereum, and ERC20 tokens follow different sequences when being transferred. This tutorial will challenge you as the student to understand one example of carrying out these basic transactions.
 
@@ -27,7 +27,7 @@ foundryup
 
 ## Challenge Description
 
-This challenge will require the user to build a contract that is capable of sending tokens or ETH to multiple provided addresses. Transferance of tokens and ETH are basics that a student must understand in smart contract development.
+This challenge will require the user to build a contract that is capable of sending tokens or ETH to multiple provided addresses. Transference of tokens and ETH are basics that a student must understand in smart contract development.
 
 Your task starts in `packages/foundry/contracts/Multisend.sol`. Use your solidity skills to make this smart contract whilst meeting the following criteria:
 
