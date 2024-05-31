@@ -38,13 +38,18 @@ contract SocialRecoveryWalletTest is Test {
         assertEq(socialRecoveryWallet.threshold(), threshold);
     }
 
+    function testCallRevertsWithCorrectError() public {
+        vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__CallFailed.selector)));
+        socialRecoveryWallet.call(address(this), 0, "");
+    }
+
     function testCanSendEth() public {
         uint256 initialValue = alice.balance;
 
         address recipient = alice;
         uint256 amountToSend = 1000;
 
-        socialRecoveryWallet.sendEth(recipient, amountToSend);
+        socialRecoveryWallet.call(recipient, amountToSend, "");
 
         assertEq(alice.balance, initialValue + amountToSend);
     }
@@ -57,7 +62,7 @@ contract SocialRecoveryWalletTest is Test {
 
         vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__NotOwner.selector)));
         vm.prank(alice);
-        socialRecoveryWallet.sendEth(recipient, amountToSend);
+        socialRecoveryWallet.call(recipient, amountToSend, "");
 
         assertEq(alice.balance, initialValue);
     }
@@ -72,7 +77,7 @@ contract SocialRecoveryWalletTest is Test {
         uint256 amountToSend = 1000;
 
         vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__WalletInRecovery.selector)));
-        socialRecoveryWallet.sendEth(recipient, amountToSend);
+        socialRecoveryWallet.call(recipient, amountToSend, "");
     }
 
     function testCanOnlyInitiateRecoveryIfGuardian() public {

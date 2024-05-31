@@ -26,6 +26,8 @@ contract SocialRecoveryWallet {
     error SocialRecoveryWallet__WalletInRecovery();
     /// @dev The guardian attempting to vote for recovery has already voted
     error SocialRecoveryWallet__AlreadyVoted();
+    /// @dev The `call()` function reverted when trying to send ETH or call another contract
+    error SocialRecoveryWallet__CallFailed();
 
     ///////////////////
     // State Variables
@@ -107,9 +109,11 @@ contract SocialRecoveryWallet {
      * @param _callee: The address of the contract or EOA you want to call
      * @param _value: The amount of ETH you're sending, if any
      */
-    function sendEth(address _callee, uint256 _value) external onlyOwner notBeingRecovered returns (bytes memory) {
-        (bool success, bytes memory result) = _callee.call{value: _value}("");
-        require(success, "external call reverted");
+    function call(address _callee, uint256 _value, bytes calldata _data) external onlyOwner notBeingRecovered returns (bytes memory) {
+        (bool success, bytes memory result) = _callee.call{value: _value}(_data);
+        if (!success) {
+            revert SocialRecoveryWallet__CallFailed();
+        }
         return result;
     }
 
