@@ -8,7 +8,6 @@ contract WrappedETH {
     //////////////////
     error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed);
     error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
-
     error InsufficientWETHBalance(address withdrawer, uint256 balance, uint256 needed);
     error FailedToSendEther(address recipient, uint256 amount);
 
@@ -23,7 +22,6 @@ contract WrappedETH {
     // ERC20 Standard Interface mappings
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
-
 
     ///////////////////
     //  Events
@@ -56,8 +54,8 @@ contract WrappedETH {
      * @dev Allows the caller to withdraw a specified amount of wrapped Ether (WETH) from their balance.
      * @param amount The amount of wrapped Ether to withdraw.
      * Requirements:
-     * - The caller must have a balance of at least `amount` wrapped Ether or revert with InsufficientWETHBalance.
-     * - The withdrawal must be successful and the Ether must be sent to the caller's address or revert with FailedToSendEther.
+     * - Revert with InsufficientWETHBalance if the caller's balance is less than the amount param
+     * - Revert with FailedToSendEther if the withdrawal is unsuccessful
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
     function withdraw(uint amount) public {
@@ -103,8 +101,8 @@ contract WrappedETH {
      * @param amount The amount of tokens to transfer.
      * @return boolean value indicating whether the transfer was successful or not.
      * Requirements:
-     * - The from address must have a balance of at least `amount` tokens or revert with ERC20InsufficientBalance.
-     * - The from address must have approved the caller to spend at least `amount` tokens or revert with ERC20InsufficientAllowance.
+     * - Revert with ERC20InsufficientBalance if the from address has a balance less than the amount param.
+     * - Revert with ERC20InsufficientAllowance if the caller is not the from address and the allowance is less than the amount param.
      * - Emits a `Transfer` event with the caller's address, the to address, and the amount of tokens approved.
      */
     function transferFrom(
