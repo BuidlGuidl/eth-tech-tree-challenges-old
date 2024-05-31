@@ -1,11 +1,8 @@
-# Multisend Challenge - ETH Tech Tree
-*--Change the above "Template For Challenge" to the challenge name--*
-*--Add a paragraph sized story that pulls in the challenger to their mission--*
+# 🤝💸 Multisend Challenge - ETH Tech Tree 
 
-Once we finish these methods we will have you deploy your contract on a testnet to be checked against our foundry tests that autograde your submission.
+ETH and token transferrance are used all the time within the web3 space. Anyone can see it when they follow txs with NFTs, DeFi, RWAs, gaming, and more. As we can see in other challenges in this repo, this ability to have transparent, immutable transferance of value is one aspect that makes blockchain technology so powerful. Therefore it is important to understand how to construct these types of transactions, at their most basic levels. 👨🏻‍🏫
 
-It already has an object in challenges.json which has the name field 'multisend'.
-*--End of story section--*
+Native assets to a blockchain, such as ETH for Ethereum, and ERC20 tokens follow different sequences when being transferred. This tutorial will challenge you as the student to understand one example of carrying out these basic transactions.
 
 ## Contents
 - [Requirements](#requirements)
@@ -29,57 +26,22 @@ foundryup
 ```
 
 ## Challenge Description
-*--Edit this section--*
-This challenge will require the user to build a contract that is capable of sending tokens or ETH to multiple provided addresses. The contract design uses two separate methods, one for sending ETH and one for sending any ERC20 token. Each method will be provided an array of addresses and an array of amounts. The ERC20 method will also receive the token address.
 
-The challenge is broken down into two main parts:
+This challenge will require the user to build a contract that is capable of sending tokens or ETH to multiple provided addresses. Transferance of tokens and ETH are basics that a student must understand in smart contract development.
 
-1. `sendETH()`
-2. `sendTokens()`
+Your task starts in `packages/foundry/contracts/Multisend.sol`. Use your solidity skills to make this smart contract whilst meeting the following criteria:
 
-Each of the above functions have natspec that outlines the requirements for the params and function. We will use these to help guide us through.
+- The contract design uses two separate methods, one for sending ETH and one for sending any ERC20 token. 
+- Each method will be provided an array of addresses and an array of amounts. 
+- The ERC20 method will also receive the token address.
 
-## ⛳️ **Checkpoint 1: `sendETH()`** 🤑
-
-<!-- ![image]() -->
-
-
-> 💡 _Hints:_ 
-
-> 💡💡 _More Hints:_ 
-
-<details markdown='1'><summary>🦉 Guided Explanation</summary>
-
-<!-- TODO: Insert explanation here -->
-
-<details markdown='1'><summary>👩🏽‍🏫 Solution Code</summary>
-
-```
-
-<!-- TODO: Add function solution here -->
-
-```
-
-</details>
-
-❗️
-
-### 🥅 Goals / Checks
-
-- [ ] 🤔 
-- [ ] 💃 
-
-Here are some helpful references:
-*Replace with real resource links if any*
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
-
-*-- TODO: DELETE THIS LINE WHEN DONE - End of challenge specific section--*
+Further `requirements` are outlined within the Nat Spec inside `Multisend.sol` similar to all other tech tree challenges. Use the Nat Spec comments combined with troubleshooting using the unit tests for this challenge by following the foundry instructions below.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
 When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing. You can also use the `--match-test "TestName"` flag to only run a single test. Of course you can chain both to include a higher verbosity and only run a specific test by including both flags `yarn foundry:test -vvvv --match-test "TestName"`. You will also see we have included an import of console2.sol which allows you to use `console.log()` type functionality inside your contracts to know what a value is at a specific time of execution. You can read more about how to use that at [FoundryBook](https://book.getfoundry.sh/reference/forge-std/console-log).
+
+The tests for this challenge can be found in `Multisend.t.sol`. Feel free to review them to better understand how your challenge submission is failing as well.
 
 For a more "hands on" approach you can try testing your contract with the provided front end interface by running the following:
 ```

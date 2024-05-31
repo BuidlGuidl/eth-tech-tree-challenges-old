@@ -63,9 +63,6 @@ contract MultisendTest is Test {
     uint256 zoroExpectedBalance2 = defaultBalance + amounts[1] - amounts[0] - amounts[1];
 
     function setUp() external {
-        /// setup dummy users (senders & recipients)
-        /// deal ETH and ERC20s to senders
-        
         // Deploy the base test contracts.
         dai = createERC20("DAI", 18);
         weth = createERC20("WETH", 18);
@@ -86,7 +83,6 @@ contract MultisendTest is Test {
     }
 
     function testSendETH() external {
-        console.log("NAMI ETH BALANCE START :", nami.balance);
         // nami sends luffy ETH
         vm.startPrank(nami);
         multisend.sendETH{value: amounts[0] + amounts[1] }(recipients, amounts);
@@ -111,8 +107,6 @@ contract MultisendTest is Test {
     
 
     function testSendTokens() external {
-        console.log("NAMI ETH BALANCE START :", dai.balanceOf(nami));
-
         // nami sends dai and weth
         vm.startPrank(nami);
 
@@ -166,7 +160,6 @@ contract MultisendTest is Test {
     }
 
     function testSendTokensSameRecipients() external {
-        console.log("NAMI ETH BALANCE START :", dai.balanceOf(nami));
         // nami sends dai and weth
         tokenRecipients = [luffy, luffy];
 
@@ -196,7 +189,6 @@ contract MultisendTest is Test {
     }
 
     function testSendETHSameRecipients() external {
-        console.log("NAMI ETH BALANCE START :", nami.balance);
         // nami sends luffy ETH
         recipients = [luffy, luffy];
 

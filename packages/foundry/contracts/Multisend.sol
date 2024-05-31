@@ -45,7 +45,10 @@ contract Multisend {
      * @notice Send ETH amounts to one or more recipients.
      * @param _recipients Addresses to send specified amounts.
      * @param _amounts Number of ETH to send to specified recipients.
-     * @dev Do we want to have a log of the recipients in memory so we don't have repeat recipients? How would we do that? I'd think we'd just keep a temporary storage of the addresses and check against it if the address has repeated.
+     * Requirements:
+     * - Revert with error `Multisend__ParamArraysNotEqualLength` if the array params lengths are not the same.
+     * - Go through the address array; check that this contract has enough ETH, and then send ETH amounts as you go through each array element. Have the tx revert if the transfer fails.
+     * - Emit a `SuccessfulETHTransfer` event with the proper details.
      */
     function sendETH(address payable[] memory _recipients, uint256[] memory _amounts) external payable {
         // ensure that arrays match in length
@@ -70,6 +73,10 @@ contract Multisend {
      * @param _amounts Number of ERC20 tokens to send to specified recipients.
      * @param _token Specified ERC20 to transfer.
      * @dev What if the tokens don't abide by ERC20? Well it would revert when trying to call an ERC20 function. This contract doesn't check that we aren't dealing with scam / rug pull ERC20s sadly, it simply just transfers ERC20s.
+     * Requirements:
+     * - Revert with error `Multisend__ParamArraysNotEqualLength` if the array params lengths are not the same.
+     * - Go through the `_recipients` array; check that this contract has enough tokens, and then send token amounts as you go through each array element.
+     * - Emit a `SuccessfulTokenTransfer` event with the proper details.
      */
     function sendTokens(address[] memory _recipients, uint256[] memory _amounts, address _token) external {
         // ensure that arrays match in length
