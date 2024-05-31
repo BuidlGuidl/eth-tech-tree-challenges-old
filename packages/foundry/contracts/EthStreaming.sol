@@ -76,7 +76,7 @@ contract EthStreaming is Ownable {
      * @param account new account to add to the stream registry
      * @param cap max amount (in wei) that can be withdrawn from stream at a time
      * Requirements:
-     * - Use a modifier inhereted from OpenZeppelin's Ownable contract to prevent accounts that are not the owner of this contract from adding streams
+     * - Use a modifier inherited from OpenZeppelin's Ownable contract to prevent accounts that are not the owner of this contract from adding streams
      * - Add a stream for the account with the cap amount
      * - Emit an `AddStream` event with the address of the account receiving the stream and the cap amount for the stream
      */
