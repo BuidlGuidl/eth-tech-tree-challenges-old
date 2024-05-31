@@ -27,8 +27,12 @@ foundryup
 ```
 
 ## Challenge Description
-*--Edit this section--*
-Write challenge description here...
+
+This challenge will require users to write an ERC20 contract that contains rebasing token logic such that when a event occurs (you decide if it happens via time interval or just a contract call) the tokens are rebased. The token holders may have more tokens or less tokens depending on the relationship of the event to the supply of tokens. If today I am holding 100 tokens and then some event occurs then I, without transferring any tokens, may only be holding 90 tokens or 110 tokens. etc.
+
+Feel free to ask any questions or express any ideas that will help the end user learn through this challenge.
+
+It already has an object in challenges.json which has the name field 'rebasing-token'.
 
 Here are some helpful references:
 *Replace with real resource links if any*

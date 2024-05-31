@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/RebasingERC20.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,11 +15,11 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+        RebasingERC20 rebasingERC20 = new RebasingERC20();
         console.logString(
             string.concat(
-                "Challenge deployed at: ",
-                vm.toString(address(challenge))
+                "RebasingERC20 deployed at: ",
+                vm.toString(address(rebasingERC20))
             )
         );
         vm.stopBroadcast();
