@@ -68,6 +68,7 @@ contract MolochRageQuit is Ownable {
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
+    event Withdrawal(address owner, uint256 amount);
 
     ///////////////////
     // Modifiers
@@ -181,6 +182,11 @@ contract MolochRageQuit is Ownable {
      * @dev Rage quit and exchange shares for ETH.
      * Requirements:
      * - The caller must have shares.
+     * - Calculate the amount of ETH to return to the caller.
+     * - Update the total shares and total ETH.
+     * - Mark the caller as having 0 shares.
+     * - Transfer the ETH to the caller.
+     * - Revert with `ReentrancyDetected` if the transfer fails.
      * Emits a `RageQuit` event.
      */
     function rageQuit() external {
@@ -208,6 +214,7 @@ contract MolochRageQuit is Ownable {
      * Requirements:
      * - Only callable by the owner.
      * - The address must not already be a member.
+     * - Mark the address as a member.
      * Emits a `MemberAdded` event.
      */
     function addMember(address newMember) external onlyOwner {
@@ -223,7 +230,8 @@ contract MolochRageQuit is Ownable {
      * @param member The address of the member to remove.
      * Requirements:
      * - Only callable by the owner.
-     * Emits a `MemberRemoved` event.
+     * - Mark the member as not a member.
+     * Emits an `MemberRemoved` event.
      */
     function removeMember(address member) external onlyOwner {
         members[member] = false;
@@ -235,14 +243,20 @@ contract MolochRageQuit is Ownable {
      * @param amount The amount of ETH to withdraw.
      * Requirements:
      * - Only callable by the owner.
+     * - Revert with `InsufficientETH` if the amount exceeds the contract's balance.
+     * - Revert with `ReentrancyDetected` if the transfer fails.
      */
-    function withdraw(uint256 amount) external onlyOwner {
+    function withdraw(uint256 amount) public onlyOwner {
         if (amount > address(this).balance) {
             revert InsufficientETH();
         }
-        (bool sent, ) = msg.sender.call{value: amount}("");
+        (bool sent, ) = payable(msg.sender).call{value: amount}("");
         if (!sent) {
             revert ReentrancyDetected();
         }
+
+        emit Withdrawal(msg.sender, amount);
     }
+    fallback() external payable {}
+    receive() external payable {}
 }
