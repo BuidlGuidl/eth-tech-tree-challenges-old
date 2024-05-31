@@ -4,21 +4,19 @@ import { console2 } from "forge-std/console2.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+enum Choice {
+    NAY,
+    YEA,
+    ABSTAIN
+}
+
+struct Proposal {
+    bytes32 id;
+    string title;
+    uint256 votingDeadline;
+    address creator;
+}
 contract Governance {
-
-    enum Choice {
-        NAY,
-        YEA,
-        ABSTAIN
-    }
-
-    struct Proposal {
-        bytes32 id;
-        string title;
-        uint256 votingDeadline;
-        address creator;
-    }
-
     // Token contract interface
     IERC20 public voteToken;
 
@@ -43,17 +41,6 @@ contract Governance {
 
     // Event emitted when a proposal is created
     event ProposalCreated(bytes32 proposalId, string title, uint256 votingDeadline, address creator);
-
-     /**
-     * @notice Constructor to initialize the governance contract
-     * @param _tokenAddress The address of the ERC20 token contract
-     * @param _votingPeriod The duration of the voting period in seconds
-     */
-    constructor(address _tokenAddress, uint256 _votingPeriod) {
-        voteToken = IERC20(_tokenAddress);
-        votingPeriod = _votingPeriod;
-        nonce = 0;
-    }
     
     /**
      * @notice Modifier to restrict access to only the token holders
@@ -61,6 +48,17 @@ contract Governance {
     modifier onlyMembers() {     
         require(voteToken.balanceOf(msg.sender) > 0, "MembersOnly::You have no tokens");
         _;
+    }
+
+    /**
+    * @notice Constructor to initialize the governance contract
+    * @param _tokenAddress The address of the ERC20 token contract
+    * @param _votingPeriod The duration of the voting period in seconds
+    */
+    constructor(address _tokenAddress, uint256 _votingPeriod) {
+        voteToken = IERC20(_tokenAddress);
+        votingPeriod = _votingPeriod;
+        nonce = 0;
     }
 
     /**
