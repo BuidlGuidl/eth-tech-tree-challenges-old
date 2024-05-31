@@ -33,7 +33,7 @@ contract EthStreaming is Ownable {
     // State Variables
     ///////////////////
     mapping(address => StreamConfig) private streamRegistry;
-    uint256 public immutable frequency = 2592000; // How long until stream is fully unlocked after last withdrawal
+    uint256 public immutable FREQUENCY = 2592000; // How long until stream is fully unlocked after last withdrawal
 
     ///////////////////
     // Events
@@ -73,10 +73,11 @@ contract EthStreaming is Ownable {
     // Public Functions
     ///////////////////
     /**
-     * @param account new account allowed allowed to withdraw from a stream
+     * @param account new account to add to the stream registry
      * @param cap max amount (in wei) that can be withdrawn from stream at a time
      * Requirements:
-     * - Only owner can add a stream
+     * - Use a modifier inhereted from OpenZeppelin's Ownable contract prevent accounts that are not the owner of this contract from adding streams
+     * - Add a stream for the account with the cap amount
      * - Emits a `AddStream` event with the address of the account receiving the stream and the cap amount for the stream
      */
     function addStream(address account, uint256 cap) public onlyOwner {
@@ -126,9 +127,9 @@ contract EthStreaming is Ownable {
 
         uint256 timeSinceLastWithdrawal = block.timestamp -
             stream.timeOfLastWithdrawal;
-        if (timeSinceLastWithdrawal > frequency) return stream.cap;
+        if (timeSinceLastWithdrawal > FREQUENCY) return stream.cap;
 
-        amount = (stream.cap * timeSinceLastWithdrawal) / frequency;
+        amount = (stream.cap * timeSinceLastWithdrawal) / FREQUENCY;
     }
 
     /**
