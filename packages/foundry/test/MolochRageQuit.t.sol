@@ -203,6 +203,7 @@ contract MolochRageQuitTest is Test {
         dao.vote(1);
     }
 
+    //Test that the Withdrawal event is emitted
     function testWithdraw() public {
         // Setup proposal and voting
         dao.propose(PROPOSAL_AMOUNT, PROPOSAL_SHARES);
@@ -212,7 +213,8 @@ contract MolochRageQuitTest is Test {
         dao.exchangeShares{value: PROPOSAL_AMOUNT}(1);
         // Ensure DAO contract has the ETH
         assertEq(address(dao).balance, PROPOSAL_AMOUNT);
-
+        vm.expectEmit(true, true, true, true);
+        emit Withdrawal(owner, 0.2 ether);
         dao.withdraw(0.2 ether);
         assertEq(address(dao).balance, PROPOSAL_AMOUNT - 0.2 ether);
     }
