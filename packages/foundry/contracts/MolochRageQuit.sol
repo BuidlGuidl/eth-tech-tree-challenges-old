@@ -162,7 +162,7 @@ contract MolochRageQuit is Ownable {
      * - The amount of ETH sent must match the proposal's ETH amount.
      * Emits a `SharesExchanged` event.
      */
-    function exchangeShares(uint256 proposalId) external payable {
+    function exchangeShares(uint256 proposalId) external payable onlyMember {
         Proposal storage proposal = proposals[proposalId];
         if (proposal.proposer != msg.sender || !proposal.approved) {
             revert ProposalNotApproved();
@@ -181,7 +181,7 @@ contract MolochRageQuit is Ownable {
     /**
      * @dev Rage quit and exchange shares for ETH.
      * Requirements:
-     * - The caller must have shares.
+     * - The caller must have shares and must be a member.
      * - Calculate the amount of ETH to return to the caller.
      * - Update the total shares and total ETH.
      * - Mark the caller as having 0 shares.
@@ -189,7 +189,7 @@ contract MolochRageQuit is Ownable {
      * - Revert with `FailedTransfer` if the transfer fails.
      * Emits a `RageQuit` event.
      */
-    function rageQuit() external {
+    function rageQuit() external onlyMember {
         uint256 memberShares = shares[msg.sender];
         if (memberShares == 0) {
             revert InsufficientShares();
