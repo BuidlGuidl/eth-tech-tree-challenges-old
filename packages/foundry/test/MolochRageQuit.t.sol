@@ -153,25 +153,21 @@ contract MolochRageQuitTest is Test {
         dao.exchangeShares{value: 0.5 ether}(1);
     }
 
-    //Test that rage quit is working
+    //Test that rage can be quited and the RageQuit event is emitted
     function testRageQuit() public {
         dao.propose(PROPOSAL_AMOUNT, PROPOSAL_SHARES);
         dao.vote(1);
         vm.prank(member1);
         dao.vote(1);
         dao.exchangeShares{value: PROPOSAL_AMOUNT}(1);
-        vm.deal(owner, INITIAL_ETH);
-        uint256 initialBalance = member1.balance;
+        uint256 initialBalance = owner.balance;
+        vm.expectEmit(true, true, true, true);
+        emit RageQuit(owner, PROPOSAL_SHARES, PROPOSAL_AMOUNT);
         dao.rageQuit();
-
-        // assertEq(dao.totalEth(), 0);
-        // assertEq(dao.totalShares(), 0);
-        // assertEq(dao.shares(member1), 0);
-        // assertEq(member1.balance, initialBalance + PROPOSAL_AMOUNT);
-
-        // vm.expectEmit(true, true, true, true);
-        // emit RageQuit(member1, PROPOSAL_SHARES, PROPOSAL_AMOUNT);
-        // dao.rageQuit();
+        assertEq(dao.totalEth(), 0);
+        assertEq(dao.totalShares(), 0);
+        assertEq(dao.shares(member1), 0);
+        assertEq(owner.balance, initialBalance + PROPOSAL_AMOUNT);
     }
 
     //Test that the member is added and the MemberAdded event is emitted
@@ -209,25 +205,21 @@ contract MolochRageQuitTest is Test {
 
     function testWithdraw() public {
         // Setup proposal and voting
-        dao.propose(1 ether, 100);
+        dao.propose(PROPOSAL_AMOUNT, PROPOSAL_SHARES);
         dao.vote(1);
         vm.prank(member1);
         dao.vote(1);
-
-        // Deal ETH to owner and DAO contract
-        vm.deal(owner, 1 ether);
-        vm.deal(address(dao), 1 ether);
-
-        // Exchange shares for ETH
-        vm.startPrank(owner);
-        dao.exchangeShares{value: 1 ether}(1);
-
+        dao.exchangeShares{value: PROPOSAL_AMOUNT}(1);
         // Ensure DAO contract has the ETH
-        assertEq(address(dao).balance, 1 ether);
+        assertEq(address(dao).balance, PROPOSAL_AMOUNT);
 
-        // Perform withdraw and check balance
-        dao.withdraw(1 ether);
-        assertEq(address(dao).balance, 0);
-        vm.stopPrank();
+        dao.withdraw(0.2 ether);
+        assertEq(address(dao).balance, PROPOSAL_AMOUNT - 0.2 ether);
     }
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 }

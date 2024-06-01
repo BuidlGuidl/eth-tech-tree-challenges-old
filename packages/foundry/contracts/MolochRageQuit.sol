@@ -16,7 +16,7 @@ error InsufficientShares();
 error ZeroAddress();
 error InvalidSharesAmount();
 error AlreadyApproved();
-error ReentrancyDetected();
+error FailedTransfer();
 error ProposalNotFound();
 error NotEnoughVotes();
 error AlreadyVoted();
@@ -185,8 +185,8 @@ contract MolochRageQuit is Ownable {
      * - Calculate the amount of ETH to return to the caller.
      * - Update the total shares and total ETH.
      * - Mark the caller as having 0 shares.
-     * - Transfer the ETH to the caller.
-     * - Revert with `ReentrancyDetected` if the transfer fails.
+     * - Transfer the ETH after calculating the share of eth to send to the caller.
+     * - Revert with `FailedTransfer` if the transfer fails.
      * Emits a `RageQuit` event.
      */
     function rageQuit() external {
@@ -202,7 +202,7 @@ contract MolochRageQuit is Ownable {
 
         (bool sent, ) = msg.sender.call{value: ethAmount}("");
         if (!sent) {
-            revert ReentrancyDetected();
+            revert FailedTransfer();
         }
 
         emit RageQuit(msg.sender, memberShares, ethAmount);
@@ -244,7 +244,7 @@ contract MolochRageQuit is Ownable {
      * Requirements:
      * - Only callable by the owner.
      * - Revert with `InsufficientETH` if the amount exceeds the contract's balance.
-     * - Revert with `ReentrancyDetected` if the transfer fails.
+     * - Revert with `FailedTransfer` if the transfer fails.
      */
     function withdraw(uint256 amount) public onlyOwner {
         if (amount > address(this).balance) {
@@ -252,11 +252,9 @@ contract MolochRageQuit is Ownable {
         }
         (bool sent, ) = payable(msg.sender).call{value: amount}("");
         if (!sent) {
-            revert ReentrancyDetected();
+            revert FailedTransfer();
         }
 
         emit Withdrawal(msg.sender, amount);
     }
-    fallback() external payable {}
-    receive() external payable {}
 }
