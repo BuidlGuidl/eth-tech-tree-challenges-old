@@ -194,17 +194,14 @@ contract MolochRageQuit is Ownable {
         if (memberShares == 0) {
             revert InsufficientShares();
         }
-
         uint256 ethAmount = (memberShares * totalEth) / totalShares;
         totalShares -= memberShares;
         totalEth -= ethAmount;
         shares[msg.sender] = 0;
-
         (bool sent, ) = msg.sender.call{value: ethAmount}("");
         if (!sent) {
             revert FailedTransfer();
         }
-
         emit RageQuit(msg.sender, memberShares, ethAmount);
     }
 
