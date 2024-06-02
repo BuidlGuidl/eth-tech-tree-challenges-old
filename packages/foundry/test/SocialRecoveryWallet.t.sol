@@ -2,10 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/StdUtils.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/SocialRecoveryWallet.sol";
 
 contract SocialRecoveryWalletTest is Test {
     SocialRecoveryWallet public socialRecoveryWallet;
+    ERC20 public dai;
 
     address alice = makeAddr("alice");
 
@@ -22,6 +25,7 @@ contract SocialRecoveryWalletTest is Test {
 
     function setUp() public {
         socialRecoveryWallet = new SocialRecoveryWallet(chosenGuardianList, threshold);
+        dai = new ERC20("Dai", "DAI");
         vm.deal(address(socialRecoveryWallet), 1 ether);
     }
 
@@ -43,7 +47,7 @@ contract SocialRecoveryWalletTest is Test {
         socialRecoveryWallet.call(address(this), 0, "");
     }
 
-    function testCanSendEth() public {
+    function testCallCanSendEth() public {
         uint256 initialValue = alice.balance;
 
         address recipient = alice;
@@ -54,7 +58,7 @@ contract SocialRecoveryWalletTest is Test {
         assertEq(alice.balance, initialValue + amountToSend);
     }
 
-    function testCantSendIfNotOwner() public {
+    function testCantCallIfNotOwner() public {
         uint256 initialValue = alice.balance;
 
         address recipient = alice;
@@ -67,7 +71,7 @@ contract SocialRecoveryWalletTest is Test {
         assertEq(alice.balance, initialValue);
     }
 
-    function testCantSendIfInRecovery() public {
+    function testCantCallIfInRecovery() public {
         vm.prank(guardian0);
         socialRecoveryWallet.initiateRecovery(newOwner);
 
@@ -78,6 +82,15 @@ contract SocialRecoveryWalletTest is Test {
 
         vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__WalletInRecovery.selector)));
         socialRecoveryWallet.call(recipient, amountToSend, "");
+    }
+
+    function testCallCanExecuteExternalTransactions() public {
+        // Sending an ERC20 for example
+        deal(address(dai), address(socialRecoveryWallet), 500);
+        assertEq(dai.balanceOf(alice), 0);
+
+        socialRecoveryWallet.call(address(dai), 0, abi.encodeWithSignature("transfer(address,uint256)", alice, 500));
+        assertEq(dai.balanceOf(alice), 500);
     }
 
     function testCanOnlyInitiateRecoveryIfGuardian() public {
