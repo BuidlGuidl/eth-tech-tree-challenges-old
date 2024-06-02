@@ -167,4 +167,22 @@ contract SocialRecoveryWallet {
             emit RecoveryExecuted(currRecovery.proposedOwner);
         }
     }
+
+    /*
+     * @param _guardian: The address of the contract or EOA to be added as a guardian
+     * Requirements:
+     * - Records the address as a guardian
+     */
+     function addGuardian(address _guardian) external onlyOwner {
+         isGuardian[_guardian] = true;
+     }
+
+    /*
+     * @param _guardian: The address of the contract or EOA to be removed as a guardian
+     * Requirements:
+     * - Removes the record of the address as a guardian
+     */
+     function removeGuardian(address _guardian) external onlyOwner {
+         delete isGuardian[_guardian];
+     }
 }
