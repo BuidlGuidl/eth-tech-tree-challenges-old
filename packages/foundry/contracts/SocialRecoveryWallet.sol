@@ -137,7 +137,7 @@ contract SocialRecoveryWallet {
      * @notice For other guardians to call after the recovery process has been initiated. If the threshold is met, ownership the wallet will transfered and the recovery process completed
      * @param _proposedOwner: the address of the new owner that will take control of the wallet
      */
-    function supportRecovery(address _proposedOwner) onlyGuardian isBeingRecovered external {
+    function supportRecovery(address _proposedOwner) external onlyGuardian isBeingRecovered {
         if (recoveryRoundToGuardianVoted[currRecovery.round][msg.sender]) {
             revert SocialRecoveryWallet__AlreadyVoted();
         }
