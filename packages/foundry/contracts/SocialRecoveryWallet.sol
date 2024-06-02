@@ -108,6 +108,9 @@ contract SocialRecoveryWallet {
     /*
      * @param _callee: The address of the contract or EOA you want to call
      * @param _value: The amount of ETH you're sending, if any
+     * Requirements:
+     * - Calls the address at _callee with the value and data passed
+     * - Emits a `SocialRecoveryWallet__CallFailed` error if the call reverts
      */
     function call(address _callee, uint256 _value, bytes calldata _data) external onlyOwner notBeingRecovered returns (bytes memory) {
         (bool success, bytes memory result) = _callee.call{value: _value}(_data);
@@ -120,6 +123,10 @@ contract SocialRecoveryWallet {
     /*
      * @notice The function for the first guardian to call in order to initiate the recovery process for the wallet
      * @param _proposedOwner: the address of the new owner that will take control of the wallet
+     * Requirements:
+     * - Puts contract into recovery mode
+     * - Records the proposed owner, current round, and the vote of the guardian making the call
+     * - Emits a `RecoveryInitiated` event
      */
     function initiateRecovery(address _proposedOwner) onlyGuardian notBeingRecovered external {
         currRound++;
@@ -136,6 +143,13 @@ contract SocialRecoveryWallet {
     /*
      * @notice For other guardians to call after the recovery process has been initiated. If the threshold is met, ownership the wallet will transfered and the recovery process completed
      * @param _proposedOwner: the address of the new owner that will take control of the wallet
+     * Requirements:
+     * - Records the vote of the guardian making the call
+     * - Emits a `RecoverySupported` event
+     * - If threshold is met:
+        * - Changes the owner of the wallet
+        * - Takes contract out of recovery mode
+        * - Emits a `RecoveryExecuted` event
      */
     function supportRecovery(address _proposedOwner) external onlyGuardian isBeingRecovered {
         if (recoveryRoundToGuardianVoted[currRecovery.round][msg.sender]) {
