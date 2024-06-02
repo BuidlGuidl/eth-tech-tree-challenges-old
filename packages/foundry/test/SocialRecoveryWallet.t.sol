@@ -183,4 +183,44 @@ contract SocialRecoveryWalletTest is Test {
         vm.prank(guardian2);
         socialRecoveryWallet.supportRecovery(newOwner);
     }
+
+    function testAddGuardian() public {
+        address newGuardian = makeAddr("newGuardian");
+        assertFalse(socialRecoveryWallet.isGuardian(newGuardian));
+
+        vm.prank(socialRecoveryWallet.owner());
+        socialRecoveryWallet.addGuardian(newGuardian);
+
+        assertTrue(socialRecoveryWallet.isGuardian(newGuardian));
+    }
+
+    function testCantAddGuardianIfNotOwner() public {
+        address newGuardian = makeAddr("newGuardian");
+        assertFalse(socialRecoveryWallet.isGuardian(newGuardian));
+
+        vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__NotOwner.selector)));
+        vm.prank(alice);
+        socialRecoveryWallet.addGuardian(newGuardian);
+
+        assertFalse(socialRecoveryWallet.isGuardian(newGuardian));
+    }
+
+    function testCantRemoveGuardianIfNotOwner() public {
+        assertTrue(socialRecoveryWallet.isGuardian(guardian0));
+
+        vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__NotOwner.selector)));
+        vm.prank(alice);
+        socialRecoveryWallet.removeGuardian(guardian0);
+
+        assertTrue(socialRecoveryWallet.isGuardian(guardian0));
+    }
+
+    function testRemoveGuardian() public {
+        assertTrue(socialRecoveryWallet.isGuardian(guardian0));
+
+        vm.prank(socialRecoveryWallet.owner());
+        socialRecoveryWallet.removeGuardian(guardian0);
+
+        assertFalse(socialRecoveryWallet.isGuardian(guardian0));
+    }
 }
