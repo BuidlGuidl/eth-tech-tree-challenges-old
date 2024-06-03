@@ -28,6 +28,8 @@ contract SocialRecoveryWallet {
     error SocialRecoveryWallet__AlreadyVoted();
     /// @dev The `call()` function reverted when trying to send ETH or call another contract
     error SocialRecoveryWallet__CallFailed();
+    /// @dev The threshold is set higher than the number of guardians
+    error SocialRecoveryWallet__ThresholdTooHigh();
 
     ///////////////////
     // State Variables
@@ -36,8 +38,11 @@ contract SocialRecoveryWallet {
 
     /// @dev Whether or not the wallet is actively being recovered
     bool public inRecovery;
+
     /// @dev The number of guardian votes required to recover the wallet
     uint256 public threshold;
+    /// @dev The number of guardians
+    uint256 public numGuardians;
     /// @dev A counter to keep track of the current recovery round
     uint256 public currRound;
 
@@ -99,9 +104,13 @@ contract SocialRecoveryWallet {
     constructor(address[] memory _guardians, uint256 _threshold) {
         owner = msg.sender;
         threshold = _threshold;
+        numGuardians = 0;
         currRound = 0;
         for (uint i = 0; i < _guardians.length; i++) {
-            isGuardian[_guardians[i]] = true;
+            if (!isGuardian[_guardians[i]]) {
+                isGuardian[_guardians[i]] = true;
+                numGuardians++;
+            }
         }
     }
 
@@ -175,6 +184,7 @@ contract SocialRecoveryWallet {
      */
      function addGuardian(address _guardian) external onlyOwner {
          isGuardian[_guardian] = true;
+         numGuardians++;
      }
 
     /*
@@ -184,5 +194,18 @@ contract SocialRecoveryWallet {
      */
      function removeGuardian(address _guardian) external onlyOwner {
          delete isGuardian[_guardian];
+         numGuardians--;
+     }
+
+    /*
+     * @param _threshold: The number of guardian votes required to recover the wallet
+     * Requirements:
+     * - Sets the contract's threshold to the input
+     */
+     function setThreshold(uint256 _threshold) external onlyOwner {
+        if (_threshold > numGuardians) {
+            revert SocialRecoveryWallet__ThresholdTooHigh();
+        }
+        threshold = _threshold;
      }
 }
