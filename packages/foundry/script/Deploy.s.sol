@@ -7,11 +7,7 @@ import "./DeployHelpers.s.sol";
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
 
-    address guardian0 = 0x0b3aA6f7e5be55E7012A8677779B41487B424F70;
-    address guardian1 = 0x09F1E981Ac9c32D3E88819b0cE091Dc27f9cf857;
-    address guardian2 = 0x62bA14f9BBAe5aF1fE4b4cA4339d9ee332750E3F;
-
-    address[] chosenGuardianList = [guardian0, guardian1, guardian2];
+    address[] chosenGuardianList;
 
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();
