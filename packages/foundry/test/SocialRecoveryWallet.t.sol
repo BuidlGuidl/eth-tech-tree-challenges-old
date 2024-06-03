@@ -223,4 +223,33 @@ contract SocialRecoveryWalletTest is Test {
 
         assertFalse(socialRecoveryWallet.isGuardian(guardian0));
     }
+
+    function testCantSetThresholdIfNotOwner() public {
+        uint256 newThreshold = 2;
+
+        vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__NotOwner.selector)));
+        vm.prank(alice);
+        socialRecoveryWallet.setThreshold(newThreshold);
+
+        assertEq(socialRecoveryWallet.threshold(), threshold);
+    }
+
+    function testCantSetThresholdHigherThanNumGuardians() public {
+        uint256 newThreshold = 5;
+
+        vm.prank(socialRecoveryWallet.owner());
+        vm.expectRevert(bytes(abi.encodeWithSelector(SocialRecoveryWallet.SocialRecoveryWallet__ThresholdTooHigh.selector)));
+        socialRecoveryWallet.setThreshold(newThreshold);
+
+        assertEq(socialRecoveryWallet.threshold(), threshold);
+    }
+
+    function testSetThreshold() public {
+        uint256 newThreshold = 2;
+
+        vm.prank(socialRecoveryWallet.owner());
+        socialRecoveryWallet.setThreshold(newThreshold);
+
+        assertEq(socialRecoveryWallet.threshold(), newThreshold);
+    }
 }
