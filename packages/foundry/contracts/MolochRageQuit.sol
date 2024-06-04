@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-////////////////////
-// Imports
-////////////////////
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 ////////////////////
 // Errors
@@ -25,7 +21,7 @@ error MemberExists();
 ////////////////////
 // Contract
 ////////////////////
-contract MolochRageQuit is Ownable {
+contract MolochRageQuit {
     ///////////////////
     // Type Declarations
     ///////////////////
@@ -214,7 +210,7 @@ contract MolochRageQuit is Ownable {
      * - Mark the address as a member.
      * Emits a `MemberAdded` event.
      */
-    function addMember(address newMember) external onlyOwner {
+    function addMember(address newMember) external  {
         if (members[newMember]) {
             revert MemberExists();
         }
@@ -230,28 +226,8 @@ contract MolochRageQuit is Ownable {
      * - Mark the member as not a member.
      * Emits an `MemberRemoved` event.
      */
-    function removeMember(address member) external onlyOwner {
+    function removeMember(address member) external {
         members[member] = false;
         emit MemberRemoved(member);
-    }
-
-    /**
-     * @dev Withdraw ETH from the DAO.
-     * @param amount The amount of ETH to withdraw.
-     * Requirements:
-     * - Only callable by the owner.
-     * - Revert with `InsufficientETH` if the amount exceeds the contract's balance.
-     * - Revert with `FailedTransfer` if the transfer fails.
-     */
-    function withdraw(uint256 amount) public onlyOwner {
-        if (amount > address(this).balance) {
-            revert InsufficientETH();
-        }
-        (bool sent, ) = payable(msg.sender).call{value: amount}("");
-        if (!sent) {
-            revert FailedTransfer();
-        }
-
-        emit Withdrawal(msg.sender, amount);
     }
 }
