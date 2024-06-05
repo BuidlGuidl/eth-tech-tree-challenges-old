@@ -201,6 +201,7 @@ contract SocialRecoveryWallet {
      * @param _threshold: The number of guardian votes required to recover the wallet
      * Requirements:
      * - Sets the contract's threshold to the input
+     * - Reverts with SocialRecoveryWallet__ThresholdTooHigh if trying to set threshold higher than the number of guardians
      */
      function setThreshold(uint256 _threshold) external onlyOwner {
         if (_threshold > numGuardians) {
