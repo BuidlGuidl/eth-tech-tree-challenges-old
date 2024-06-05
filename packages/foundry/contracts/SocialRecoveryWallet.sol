@@ -181,6 +181,7 @@ contract SocialRecoveryWallet {
      * @param _guardian: The address of the contract or EOA to be added as a guardian
      * Requirements:
      * - Records the address as a guardian
+     * - Updates the numGuardians variable
      */
      function addGuardian(address _guardian) external onlyOwner {
          if (isGuardian[_guardian]) {
@@ -194,6 +195,7 @@ contract SocialRecoveryWallet {
      * @param _guardian: The address of the contract or EOA to be removed as a guardian
      * Requirements:
      * - Removes the record of the address as a guardian
+     * - Updates the numGuardians variable
      */
      function removeGuardian(address _guardian) external onlyOwner {
          if (!isGuardian[_guardian]) {
