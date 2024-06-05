@@ -226,12 +226,22 @@ contract SocialRecoveryWalletTest is Test {
     }
 
     function testRemoveGuardian() public {
+        uint256 original_num_guardians = socialRecoveryWallet.numGuardians();
         assertTrue(socialRecoveryWallet.isGuardian(guardian0));
 
         vm.prank(socialRecoveryWallet.owner());
         socialRecoveryWallet.removeGuardian(guardian0);
 
         assertFalse(socialRecoveryWallet.isGuardian(guardian0));
+        assertEq(socialRecoveryWallet.numGuardians(), original_num_guardians - 1);
+
+        // Try to remove address that was never a guardian
+        original_num_guardians = socialRecoveryWallet.numGuardians();
+        vm.prank(socialRecoveryWallet.owner());
+        socialRecoveryWallet.removeGuardian(alice);
+
+        assertFalse(socialRecoveryWallet.isGuardian(alice));
+        assertEq(socialRecoveryWallet.numGuardians(), original_num_guardians);
     }
 
     function testCantSetThresholdIfNotOwner() public {

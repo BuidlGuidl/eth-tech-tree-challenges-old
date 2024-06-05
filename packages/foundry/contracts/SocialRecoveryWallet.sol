@@ -196,6 +196,9 @@ contract SocialRecoveryWallet {
      * - Removes the record of the address as a guardian
      */
      function removeGuardian(address _guardian) external onlyOwner {
+         if (!isGuardian[_guardian]) {
+             return;
+         }
          delete isGuardian[_guardian];
          numGuardians--;
      }
