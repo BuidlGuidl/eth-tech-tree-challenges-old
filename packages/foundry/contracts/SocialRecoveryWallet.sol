@@ -183,6 +183,9 @@ contract SocialRecoveryWallet {
      * - Records the address as a guardian
      */
      function addGuardian(address _guardian) external onlyOwner {
+         if (isGuardian[_guardian]) {
+             return;
+         }
          isGuardian[_guardian] = true;
          numGuardians++;
      }

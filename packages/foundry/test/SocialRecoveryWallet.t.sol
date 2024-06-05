@@ -186,12 +186,22 @@ contract SocialRecoveryWalletTest is Test {
 
     function testAddGuardian() public {
         address newGuardian = makeAddr("newGuardian");
+        uint256 original_num_guardians = socialRecoveryWallet.numGuardians();
         assertFalse(socialRecoveryWallet.isGuardian(newGuardian));
 
         vm.prank(socialRecoveryWallet.owner());
         socialRecoveryWallet.addGuardian(newGuardian);
 
         assertTrue(socialRecoveryWallet.isGuardian(newGuardian));
+        assertEq(socialRecoveryWallet.numGuardians(), original_num_guardians + 1);
+
+        // Try to add the same guardian again
+        original_num_guardians = socialRecoveryWallet.numGuardians();
+        vm.prank(socialRecoveryWallet.owner());
+        socialRecoveryWallet.addGuardian(newGuardian);
+
+        assertTrue(socialRecoveryWallet.isGuardian(newGuardian));
+        assertEq(socialRecoveryWallet.numGuardians(), original_num_guardians);
     }
 
     function testCantAddGuardianIfNotOwner() public {
