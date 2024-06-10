@@ -33,16 +33,19 @@ contract GovernanceTest is Test {
 
     function testProposal() public {
         vm.prank(userOne);
-        bytes32 id = governance.propose("New Proposal");
-        assertEq(governance.getProposal(id).title, "New Proposal");
+        bytes32 pId = governance.propose("New Proposal");
+        (,string memory title,,) = governance.proposals(pId);
+        assertEq(title, "New Proposal");
     }
-    function testFailNonMemberProposal() public {
+    function testErrorNonMemberProposal() public {
         vm.prank(userNonMember);
+        vm.expectRevert(UnAuthorized_MembersOnly.selector);
         governance.propose("Failing Proposal");
     }
 
-    function testFailNonMemberVoting() public {
+    function testErrorNonMemberVoting() public {
         vm.prank(userNonMember);
+        vm.expectRevert(UnAuthorized_MembersOnly.selector);
         governance.vote(proposalId, Choice.YEA);
     }
 
@@ -76,10 +79,11 @@ contract GovernanceTest is Test {
         assertTrue(governance.hasVoted(proposalId, userThree));
     }
 
-    function testFailDoubleVoting() public {
+    function testErrorDoubleVoting() public {
         vm.startPrank(userOne);
         governance.vote(proposalId, Choice.NAY);
         assertTrue(governance.hasVoted(proposalId, userOne));
+        vm.expectRevert(DuplicateVoting.selector);
         governance.vote(proposalId, Choice.YEA);
         vm.stopPrank();
     }
@@ -118,11 +122,18 @@ contract GovernanceTest is Test {
         assertEq(result, true);
     }
 
-    function testFailVoteAfterDeadline() public {
+    function testErrorVoteAfterDeadline() public {
         // Try to vote after the voting deadline
         vm.warp(block.timestamp + 86400 + 1);
         vm.prank(userOne);
+        vm.expectRevert(VotingPeriodOver.selector);
         governance.vote(proposalId, Choice.YEA);
+    }
+
+    function testErrorVoteInProgress() public {
+        // Try to get result when vote is in progress
+        vm.expectRevert(VotingInProgress.selector);
+        governance.getResult(proposalId);
     }
 
 }
