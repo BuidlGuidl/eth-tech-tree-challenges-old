@@ -1,30 +1,57 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
-import { console2 } from "forge-std/console2.sol";
 
+pragma solidity ^0.8.13;
+
+import { console2 } from "forge-std/console2.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Voting {
-    // Token contract interface
+
+    ///////////////////
+    // State Variables
+    ///////////////////
+    // @dev Token contract interface
     IERC20 public token;
-    // Voting deadline timestamp
+
+    // @dev Voting deadline timestamp
     uint256 public votingDeadline;
-    // Tracks whether an address has voted
-    mapping(address => bool) public hasVoted;
-    // Tracks whether an address has supported the proposal
-    mapping(address => bool) public hasSupported;
-    // Total votes in favor of the proposal
+    // @dev Total votes in favor of the proposal
     uint256 public votesFor;
-    // Total votes against the proposal
+    // @dev Total votes against the proposal
     uint256 public votesAgainst;
-    // The proposal
+
+    // @dev The proposal
     string public proposal = "Expand the Intelligence Network";
 
-    // Event emitted when a vote is cast
+    // @dev Tracks whether an address has voted
+    mapping(address => bool) public hasVoted;
+    // @dev Tracks whether an address has supported the proposal
+    mapping(address => bool) public hasSupported;
+
+    ///////////////////
+    // Events
+    ///////////////////
+    // @dev Event emitted when a vote is cast
     event VoteCasted(address indexed voter, bool vote, uint256 weight);
-    // Event emitted when votes are removed
+    // @dev Event emitted when votes are removed
     event VotesRemoved(address indexed voter, uint256 weight);
 
+    ///////////////////
+    // Modifiers
+    ///////////////////
+    /**
+     * @dev Modifier to restrict access to only the token contract
+     * Requirements:
+     * - The caller must be the token contract
+     */
+    modifier onlyTokenContract() {
+        require(msg.sender == address(token), "Only token contract can call this function");
+        _;
+    }
+
+    ///////////////////
+    // Functions
+    ///////////////////
     /**
      * @dev Constructor to initialize the voting contract
      * @param _tokenAddress The address of the ERC20 token contract
@@ -38,16 +65,6 @@ contract Voting {
         votingDeadline = block.timestamp + _votingPeriod;
     }
     
-    /**
-     * @dev Modifier to restrict access to only the token contract
-     * Requirements:
-     * - The caller must be the token contract
-     */
-    modifier onlyTokenContract() {
-        require(msg.sender == address(token), "Only token contract can call this function");
-        _;
-    }
-
     /**
      * @dev Function to remove votes when tokens used for voting are transferred
      * @param voter The address of the voter whose votes are to be removed
