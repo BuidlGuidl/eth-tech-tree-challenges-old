@@ -90,7 +90,7 @@ contract Voting {
      * - Remove the voter's weight from voted option
      * - Resets the hasVoted flags for the voter
      * - Emits a `VotesRemoved` event
-     * - Emits a Voting__NotTokenContract error if called by anyone other than the token contract
+     * - Reverts with `Voting__NotTokenContract` error if called by anyone other than the token contract
      */
     function removeVotes(address voter) external onlyTokenContract {
         if(!hasVoted[voter]) {
@@ -117,9 +117,9 @@ contract Voting {
      * - Marks the user as having voted.
      * - Marks the user's support status.
      * - Emits a `VoteCasted` event.
-     * - Emits a `Voting__VotingHasEnded` error if voting period has ended.
-     * - Emits a `Voting__AlreadyVoted` error if caller has already voted.
-     * - Emits a `Voting__NotEnoughTokens` error if caller doesn't have a balance.
+     * - Reverts with `Voting__VotingHasEnded` error if voting period has ended.
+     * - Reverts with `Voting__AlreadyVoted` error if caller has already voted.
+     * - Reverts with `Voting__NotEnoughTokens` error if caller doesn't have a balance.
      */
     function vote(bool support) public {
         if (block.timestamp >= votingDeadline) {
@@ -148,7 +148,7 @@ contract Voting {
      * @dev Function to get the result of the vote
      * @return The result should be true if the majority of votes are in favor, otherwise return false
      * Requirements:
-     * - Emit a Voting__VotingHasNotEnded error if the voting period has not ended
+     * - Reverts with `Voting__VotingHasNotEnded` error if the voting period has not ended
      * - Determine the result based on the majority vote
      */
     function getResult() public view returns (bool) {
