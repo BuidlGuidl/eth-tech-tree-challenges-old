@@ -189,11 +189,22 @@ contract MolochRageQuit {
      */
     function executeProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
-        if (!proposal.approved) {
-            revert MolochRageQuit__ProposalNotApproved();
-        }
-        if (proposal.deadline > block.timestamp) {
+
+        if (block.timestamp < proposal.deadline) {
             revert MolochRageQuit__ProposalDeadlineNotReached();
+        }
+
+        if (!proposal.approved) {
+            // Refund the value to the proposer if the proposal is not approved
+            if (proposal.value > 0) {
+                (bool refunded, ) = proposal.proposer.call{
+                    value: proposal.value
+                }("");
+                if (!refunded) {
+                    revert MolochRageQuit__FailedTransfer();
+                }
+            }
+            revert MolochRageQuit__ProposalNotApproved();
         }
 
         (bool success, ) = proposal.contractAddr.call{value: proposal.value}(
