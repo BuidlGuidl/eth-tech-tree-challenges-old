@@ -116,7 +116,7 @@ contract MolochRageQuit {
         bytes memory data,
         uint256 value,
         uint256 deadline
-    ) external {
+    ) external onlyMember {
         if (contractAddr == address(0)) {
             revert MolochRageQuit__ZeroAddress();
         }
@@ -278,7 +278,7 @@ contract MolochRageQuit {
      * - Mark the address as a member.
      * Emits a `MemberAdded` event.
      */
-    function addMember(address newMember) external {
+    function addMember(address newMember) external onlyContractAddress {
         if (members[newMember]) {
             revert MolochRageQuit__MemberExists();
         }
