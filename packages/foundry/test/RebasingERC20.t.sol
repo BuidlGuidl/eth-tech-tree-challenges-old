@@ -21,10 +21,9 @@ contract RebasingERC20Test is Test {
 
     /**
      * @dev Emitted when a rebase occurs.
-     * @param epoch The epoch number of the rebase event.
      * @param totalSupply The new total supply of the token after the rebase.
      */
-    event Rebase(uint256 indexed epoch, uint256 totalSupply);
+    event Rebase(uint256 totalSupply);
 
     function setUp() public {
         luffy = address(this);
@@ -64,36 +63,81 @@ contract RebasingERC20Test is Test {
     }
 
     function testRebasePositive() public {
-        uint256 epoch = 1;
         int256 supplyDelta = int256(initialBalance);
         uint256 oldTotalSupply = token.totalSupply();
         uint256 expectedTotalSupply = oldTotalSupply + initialBalance;
         
         vm.expectEmit(true, false, false, true);
-        emit Rebase(epoch, expectedTotalSupply);
-        token.rebase(epoch, supplyDelta);
+        emit Rebase(expectedTotalSupply);
+        token.rebase(supplyDelta);
         uint256 newTotalSupply = token.totalSupply();
 
         assertEq(newTotalSupply, oldTotalSupply + uint256(supplyDelta));
-        assertEq(token.balanceOf(luffy), luffyBalance1* (newTotalSupply) / oldTotalSupply);
+        assertEq(token.balanceOf(luffy), luffyBalance1 * (newTotalSupply) / oldTotalSupply);
         assertEq(token.balanceOf(zoro), (zoroBalance1 * newTotalSupply) / oldTotalSupply);
     }
 
     function testRebaseNegative() public {
-        uint256 epoch = 1;
         int256 supplyDelta = -int256(initialBalance);
         uint256 oldTotalSupply = token.totalSupply();
         uint256 expectedTotalSupply = oldTotalSupply - initialBalance;
         
         vm.expectEmit(true, false, false, true);
-        emit Rebase(epoch, expectedTotalSupply);
-        token.rebase(epoch, supplyDelta);
+        emit Rebase(expectedTotalSupply);
+        token.rebase(supplyDelta);
         uint256 newTotalSupply = token.totalSupply();
 
         assertEq(newTotalSupply, oldTotalSupply - uint256(-supplyDelta));
         assertEq(token.balanceOf(luffy), (luffyBalance1 * newTotalSupply) / oldTotalSupply);
         assertEq(token.balanceOf(zoro), (zoroBalance1 * newTotalSupply) / oldTotalSupply);
     }
+
+    /**
+     * Test that rounding errors don't arise
+     */
+    function testRoundingErrors() public {
+        // Perform multiple small transfers to check for rounding errors
+        uint256 transferAmount = 1 * 10 ** token.decimals(); // Small transfer amount
+        uint256 numTransfers = 1000;
+
+        for (uint256 i = 0; i < numTransfers; i++) {
+            vm.prank(luffy);
+            token.transfer(zoro, transferAmount);
+
+            vm.prank(zoro);
+            token.transfer(luffy, transferAmount);
+        }
+
+        // Check balances after multiple small transfers
+        uint256 finalLuffyBalance = token.balanceOf(luffy);
+        uint256 finalZoroBalance = token.balanceOf(zoro);
+
+        // Check for rounding errors
+        // TODO - check end resultant math
+        assertEq(finalLuffyBalance, (token.totalSupply() - 1000 * 10 ** token.decimals()) * token._scalingFactor() / (1e18));
+        assertEq(finalZoroBalance, ( 1000 * 10 ** token.decimals() * token._scalingFactor() / (1e18)));
+    }
+
+    /// TODO 
+    function testTransferAfterRebase() public {
+
+    }
+
+    /// TODO 
+    function testTransferFromAfterRebase() public {
+
+    }
+
+    /// TODO - unsure if minting is affected with scaling factor etc.
+    function testMint() public {
+
+    }
+
+    /// TODO - unsure if minting is affected with scaling factor etc.
+    function testBurn() public {
+
+    }
+
 
     // Not Happy Path Tests
 
@@ -108,22 +152,14 @@ contract RebasingERC20Test is Test {
         // Non-owner tries to rebase the contract
         vm.prank(zoro);
         vm.expectRevert("Ownable: caller is not the owner");
-        token.rebase(1, 1000);
+        token.rebase(1000);
     }
 
     function testFailRebaseBadSupplyDelta() public {
         // Owner tries to rebase the contract with a bad value for supplyDelta
         vm.startPrank(luffy);
         vm.expectRevert(bytes(abi.encodeWithSelector(RebasingERC20.RebasingERC20__InvalidSupplyDelta.selector, type(int256).min)));
-        token.rebase(1, type(int256).min);
-        vm.stopPrank();
-    }
-
-    function testFailRebaseBadEpoch() public {
-        // Owner tries to rebase the contract with a bad value for epoch
-        vm.startPrank(luffy);
-        vm.expectRevert(bytes(abi.encodeWithSelector(RebasingERC20.RebasingERC20__InvalidSupplyDelta.selector, 0)));
-        token.rebase(0, 1000);
+        token.rebase(type(int256).min);
         vm.stopPrank();
     }
 }

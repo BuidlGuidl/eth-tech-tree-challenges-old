@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /**
  * @title RebasingERC20 Challenge Contract
@@ -10,8 +11,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @notice This challenge contract is meant to be an ERC-20 token with a rebasing mechanism to adjust total supply.
  * @dev The natspec is meant to be paired with the README.md to help guide you through this challenge! Goodluck!
  * @dev This smart contract is PURELY EDUCATIONAL, and is not to be used in production code. It is up to the user's discretion to make their own production code, run tests, have audits, etc.
+ * The coupon ERC20 can be redeemed for the rebasing underlying token. The redeem function has a requirement that the redemption transfers in coupon tokens. The coupon tokens then gets XYZ amount of underlying tokens to the user. Everytime a rebase happens, the underlying token totalSupply increases or decreases. 
+ * The coupon token, upon redemptions, is burnt. The coupon token contract has the same onlyOwner as the rebasing token, and it owns the rebasing token? So that way, redemption calls have to be made through the coupon token. 
+ * Redemptions are called on the RebasingToken contract itself. 
+ * Upon redemptions, users get RBT, but then... there's some RBT out there in the wild. Rebases have to take this into account. There's always XYZ minted once it's minted. The scalingFactor is affected by the amountActuallyMinted. scalingFactor =  (1e18) * _totalSupply / _initialSupply; where totalSupply = oldTotalSupply +- supplyDelta, BUT supplyDelta must not cause totalSupply to LTE to amountActuallyMinted.
+ * Thus, balanceOf() will report the real balance of a user
+ * AND previewRedeem() will report estimated amount upon redemption. 
  */
 contract RebasingERC20 is ERC20, Ownable {
+    using SafeMath for uint256;
 
     /// Errors
     /**
@@ -20,28 +28,22 @@ contract RebasingERC20 is ERC20, Ownable {
     error RebasingERC20__InsufficientBalance(address _sender, uint256 _amount);
 
     /**
-     * @notice Cannot use bad epoch values in rebase.
-     */
-    error RebasingERC20__BadEpoch(uint256 _epoch);
-
-    /**
      * @notice Cannot use bad _supplyDelta values in rebase.
      */
     error RebasingERC20__InvalidSupplyDelta(uint256 _supplyDelta);
 
     /// State Vars
     uint256 public _totalSupply;
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) public _balances;
     uint256 public _scalingFactor;
     uint256 public _initialSupply;
     /// Events
 
     /**
      * @dev Emitted when a rebase occurs.
-     * @param epoch The epoch number of the rebase event.
      * @param totalSupply The new total supply of the token after the rebase.
      */
-    event Rebase(uint256 indexed epoch, uint256 totalSupply);
+    event Rebase(uint256 totalSupply);
 
     /**
      * @notice Sets Total Supply and Scaling Factor.
@@ -58,10 +60,16 @@ contract RebasingERC20 is ERC20, Ownable {
      * @notice Overridden `balanceOf()` function from ERC20.sol because rebasing token rebases using scaling factor in this contract.
      * @param account The address querying for its balance.
      * @return Number of tokens account has at this time.
+     * Requirements:
+     * - Return the balance of the requested account whilst taking into account the _scalingFactor & appropriate decimals.
      */
     function balanceOf(address account) public view override returns (uint256) {
         return _balances[account] * _scalingFactor / (1e18);
     }
+
+    // function previewRedeem() public view returns (uint256) {
+
+    // }
 
     /**
      * @notice Returns the total supply of the token.
@@ -73,21 +81,18 @@ contract RebasingERC20 is ERC20, Ownable {
 
     /**
      * @dev Adjusts the total supply of the token.
-     * @param epoch The epoch number of the rebase event.
      * @param supplyDelta The amount to increase or decrease the total supply by.
      * @return The new total supply of the token.
      * Requirements:
-     * - Revert with`RebasingERC20__BadEpoch` if improper epoch provided
      * - Simply return current _totalSupply if supplyDelta == 0
      * - Increment _totalSupply based on supplyDelta being > or < 0
      * - Calculate new _scalingFactor based on _totalSupply and _initialSupply()
      * - emit `Rebase` event
      * - return _totalSupply
      */
-    function rebase(uint256 epoch, int256 supplyDelta) external onlyOwner returns (uint256) {
-        if(epoch == 0) revert RebasingERC20__BadEpoch(epoch);
+    function rebase(int256 supplyDelta) external onlyOwner returns (uint256) {
         if (supplyDelta == 0) {
-            emit Rebase(epoch, _totalSupply);
+            emit Rebase(_totalSupply);
             return _totalSupply;
         }
 
@@ -99,7 +104,7 @@ contract RebasingERC20 is ERC20, Ownable {
 
         _scalingFactor = (1e18) * _totalSupply / _initialSupply;
 
-        emit Rebase(epoch, _totalSupply);
+        emit Rebase(_totalSupply);
         return _totalSupply;
     }
 
@@ -117,7 +122,7 @@ contract RebasingERC20 is ERC20, Ownable {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         if (from == address(0)) {
             // Minting tokens
-            _balances[to] += amount * (1e18) / _scalingFactor;
+            _balances[to] += amount * (1e18) / _scalingFactor; // TODO - I think these should be `_balances[to] += amount * (1e18) * _scalingFactor;`
         } else if (to == address(0)) {
             // Burning tokens
             _balances[from] -= amount * (1e18) / _scalingFactor;
