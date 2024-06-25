@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /**
  * @title RebasingERC20 Challenge Contract
@@ -11,18 +10,10 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * @notice This challenge contract is meant to be an ERC-20 token with a rebasing mechanism to adjust total supply.
  * @dev The natspec is meant to be paired with the README.md to help guide you through this challenge! Goodluck!
  * @dev This smart contract is PURELY EDUCATIONAL, and is not to be used in production code. It is up to the user's discretion to make their own production code, run tests, have audits, etc.
- * The coupon ERC20 can be redeemed for the rebasing underlying token. The redeem function has a requirement that the redemption transfers in coupon tokens. The coupon tokens then gets XYZ amount of underlying tokens to the user. Everytime a rebase happens, the underlying token totalSupply increases or decreases. 
- * The coupon token, upon redemptions, is burnt. The coupon token contract has the same onlyOwner as the rebasing token, and it owns the rebasing token? So that way, redemption calls have to be made through the coupon token. 
- * Redemptions are called on the RebasingToken contract itself. 
- * Upon redemptions, users get RBT, but then... there's some RBT out there in the wild. Rebases have to take this into account. There's always XYZ minted once it's minted. The scalingFactor is affected by the amountActuallyMinted. scalingFactor =  (1e18) * _totalSupply / _initialSupply; where totalSupply = oldTotalSupply +- supplyDelta, BUT supplyDelta must not cause totalSupply to LTE to amountActuallyMinted.
- * Thus, balanceOf() will report the real balance of a user
- * AND previewRedeem() will report estimated amount upon redemption. 
- * mint() will increase actual total supply, and mint tokens --> it is only callable upon redemption of coupon tokens.
- * If users just burn coupon tokens, without redeeming... is that allowed? To keep things simple, no.
- * TODO - how are minted tokens handled when it comes to the math of the rebasing, etc.?
+ * Rebasing tokens automatically adjust its supply to target a specific price. Thus the token supply is increased or decreased periodically, where the effects are applied to all token holders, proportionally. Rebasing is an alternative price stabilization method versus traditional market mechanisms.
+ * Thus, balanceOf() and token transferrance will report the real balance of a user, adjusted by rebasing effects.
  */
 contract RebasingERC20 is ERC20, Ownable {
-    using SafeMath for uint256;
 
     /// Errors
     /**
@@ -44,7 +35,11 @@ contract RebasingERC20 is ERC20, Ownable {
     uint256 public _totalSupply;
     mapping(address => uint256) public _balances;
     uint256 public _scalingFactor;
-    uint256 public _initialSupply;
+    uint256 public _initialSupply; 
+    
+    // This is denominated in RBT, because the underlying "constituent points" conversion might change before it's fully paid.
+    mapping(address => mapping(address => uint256)) public _allowedRBT;
+
     /// Events
 
     /**
@@ -56,12 +51,13 @@ contract RebasingERC20 is ERC20, Ownable {
     /**
      * @notice Sets Total Supply and Scaling Factor.
      * @dev Constructor that gives msg.sender all of the existing tokens.
+     * @dev initialSupply is set to 1 million tokens with 18 decimals.
      */
     constructor() ERC20("RebasingToken", "RBT") {
-        _totalSupply = 1000000 * 10 ** decimals();
+        _initialSupply = 1000000 * 10 ** decimals();
         _scalingFactor = 1e18; // Initial scaling factor (1.0)
-        _mint(msg.sender, _totalSupply);
-        _initialSupply = _totalSupply;
+        _balances[msg.sender] = _initialSupply; // aka `_balances[msg.sender] = _initialSupply * (1e18) / _scalingFactor;`
+         _totalSupply = _initialSupply;
     }
 
     /**
@@ -76,31 +72,16 @@ contract RebasingERC20 is ERC20, Ownable {
     }
 
     /**
-     * @notice 
-     * @dev Similar to ERC4626, but this contract doesn't have a vault of underlying tokens, it is the "bank" that mints the underlying tokens.
-     */
-    function previewRedeem(uint256 shares) public view returns (uint256) {
-        return _convertToAssets(shares, Math.Rounding.Floor);
-    }
-
-    /**
-     * @notice Returns the total supply of the token.
-     * @return The total supply of the token.
-     */
-    function totalSupply() public view override returns (uint256) {
-        return _totalSupply;
-    }
-
-    /**
      * @dev Adjusts the total supply of the token.
      * @param supplyDelta The amount to increase or decrease the total supply by.
      * @return The new total supply of the token.
      * Requirements:
-     * - Simply return current _totalSupply if supplyDelta == 0
-     * - Increment _totalSupply based on supplyDelta being > or < 0
-     * - Calculate new _scalingFactor based on _totalSupply and _initialSupply()
-     * - emit `Rebase` event
+     * - Write conditional logic such that:
+     *  - Simply return current _totalSupply if supplyDelta == 0
+     *  - Increment _totalSupply based on supplyDelta being > or < 0
+     *  - Calculate new _scalingFactor based on _totalSupply and _initialSupply()
      * - return _totalSupply
+     * - emit `Rebase` event before returning _totalSupply
      */
     function rebase(int256 supplyDelta) external onlyOwner returns (uint256) {
         if (supplyDelta == 0) {
@@ -113,9 +94,6 @@ contract RebasingERC20 is ERC20, Ownable {
         } else {
             _totalSupply += uint256(supplyDelta);
         }
-
-        // ensures that adjusted _totalSupply respects the already minted and circulating amount of rebase tokens out there.
-        if (_totalSupply < totalSupply()) revert RebasingERC20__ResultantTotalLowerThanMintedSupply(totalSupply(), _totalSupply);
 
         _scalingFactor = (1e18) * _totalSupply / _initialSupply;
 
@@ -132,7 +110,7 @@ contract RebasingERC20 is ERC20, Ownable {
      * - Write conditional statement for minting, aka when from address is address(0)
      * - Write conditional statement for burning, aka when to address is address(0)
      * - Finally handle if the sequence is just a transference of tokens.
-     * - For all of the above, make sure to do the proper increase or decrease of token balances whilst taking into account the _scalingFactor.
+     * - For all of the above, make sure to increase or decrease token balances whilst taking into account the _scalingFactor.
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         amount = amount * (1e18) / _scalingFactor;
@@ -171,29 +149,103 @@ contract RebasingERC20 is ERC20, Ownable {
      * @param amount The amount of tokens to transfer.
      * @return A boolean indicating whether the operation succeeded.
      * Requirements:
+     * - Update `_allowedRBT` mapping for sender and msg.sender
      * - Use the `_beforeTokenTransfer()` hook to handle the various ways that transfer is being called.
-     * - Approve the sender the appropriate amount.
      * - Emit the Transfer event as per ERC20 standard.
-     * - Return whether or not the tx was successful.
+     * - Return true if tx was successful.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+        _allowedRBT[sender][msg.sender] = _allowedRBT[sender][msg.sender] - (amount);
         _beforeTokenTransfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), allowance(sender, _msgSender()) - amount);
         emit Transfer(sender, recipient, amount);
         return true;
     }
 
-    /// Helpers
+    /// NEW FUNCTIONS
 
-    function convertToAssets(uint256 shares) public view virtual returns (uint256) {
-        return _convertToAssets(shares, Math.Rounding.Floor);
+    /**
+     * @dev Transfer all balance tokens from one address to another.
+     * @param from The address you want to send tokens from.
+     * @param to The address you want to transfer to.
+     * Requirements:
+     * - Calculate the `value` of $RBT to transfer, use the scaling factor and appropriate decimals.
+     * - Update the `_allowedRBT` mapping for `from` and `msg.sender`
+     * - Delete the `_balances[from]`
+     * - Increase the `_balances[to]` by the correct amount
+     * - Emit the Transfer event as per ERC20 standard.
+     * - Return true if tx was successful.
+     */
+    function transferAllFrom(address from, address to) external returns (bool) {
+        uint256 constituentValue = _balances[from];
+        uint256 value = constituentValue * 1e18 / (_scalingFactor);
+
+        _allowedRBT[from][msg.sender] = _allowedRBT[from][msg.sender] - (value);
+
+        delete _balances[from];
+        _balances[to] = _balances[to] +  (constituentValue);
+
+        emit Transfer(from, to, value);
+        return true;
     }
 
     /**
-     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
-     * TODO - change this to reflect rebasing aspect of this contract.
+     * @dev Approve the passed address to spend the specified amount of tokens on behalf of
+     * msg.sender. This method is included for ERC20 compatibility.
+     * increaseAllowance and decreaseAllowance should be used instead.
+     * Changing an allowance with this method brings the risk that someone may transfer both
+     * the old and the new allowance - if they are both greater than zero - if a transfer
+     * transaction is mined before the later approve() call is mined.
+     * @param spender The address which will spend the funds.
+     * @param value The amount of tokens to be spent.
+     * Requirements:
+     * - Update the `_allowedRBT[msg.sender][spender]` value
+     * - Emit the Approval event as per ERC20 standard.
+     * - Return true if tx was successful.
      */
-    function _convertToAssets(uint256 shares, Math.Rounding rounding) internal view virtual returns (uint256) {
-        return shares.mulDiv(totalAssets() + 1, totalSupply() + 10 ** _decimalsOffset(), rounding);
+    function approve(address spender, uint256 value) public override returns (bool) {
+        _allowedRBT[msg.sender][spender] = value;
+
+        emit Approval(msg.sender, spender, value);
+        return true;
     }
+
+    /**
+     * @dev Increase the amount of tokens that an owner has allowed to a spender.
+     * This method should be used instead of approve() to avoid the double approval vulnerability
+     * described above.
+     * @param spender The address which will spend the funds.
+     * @param addedValue The amount of tokens to increase the allowance by.
+     * Requirements:
+     * - Update the `_allowedRBT[msg.sender][spender]` value
+     * - Emit the Approval event as per ERC20 standard.
+     * - Return true if tx was successful.'
+     */
+    function increaseAllowance(address spender, uint256 addedValue) public override returns (bool) {
+        _allowedRBT[msg.sender][spender] = _allowedRBT[msg.sender][spender] +  (
+            addedValue
+        );
+
+        emit Approval(msg.sender, spender, _allowedRBT[msg.sender][spender]);
+        return true;
+    }
+
+    /**
+     * @dev Decrease the amount of tokens that an owner has allowed to a spender.
+     * @param spender The address which will spend the funds.
+     * @param subtractedValue The amount of tokens to decrease the allowance by.
+     * Requirements:
+     * - Update the `_allowedRBT[msg.sender][spender]` value
+     * - Emit the Approval event as per ERC20 standard.
+     * - Return true if tx was successful.'
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) public override returns (bool) {
+        uint256 oldValue = _allowedRBT[msg.sender][spender];
+        _allowedRBT[msg.sender][spender] = (subtractedValue >= oldValue)
+            ? 0
+            : oldValue - (subtractedValue);
+
+        emit Approval(msg.sender, spender, _allowedRBT[msg.sender][spender]);
+        return true;
+    }
+
 }
