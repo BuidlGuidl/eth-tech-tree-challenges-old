@@ -28,17 +28,46 @@ foundryup
 
 ## Challenge Description
 
-This challenge will require users to write an ERC20 contract that contains rebasing token logic such that when a event occurs (you decide if it happens via time interval or just a contract call) the tokens are rebased. The token holders may have more tokens or less tokens depending on the relationship of the event to the supply of tokens. If today I am holding 100 tokens and then some event occurs then I, without transferring any tokens, may only be holding 90 tokens or 110 tokens. etc.
+This challenge will require users to write an ERC20 contract that contains rebasing token logic such that when a event occurs. 
+
+Rebasing tokens automatically adjust its supply to target a specific price. Thus the token supply is increased or decreased periodically, where the effects are applied to all token holders, proportionally. Rebasing is an alternative price stabilization method versus traditional market mechanisms.
+
+An example of a rebasing token is the Ampleforth token, AMPL.
+
+AMPL uses old contracts called `UFragments.sol`, where `Fragments` are the ERC20 and the underlying value of them are denominated in `GONS`. Balances of users, transferrance of tokens, are all calculated using `GONs` via a mapping and a var called `_gonsPerFragment`. This var changes and thus changes the balance of the Fragments token for a user since the `balanceOf()` function equates to `_gonBalances[who].div(_gonsPerFragment)`. 
+
+> For reference, this can be seen [here](https://etherscan.deth.net/address/0xD46bA6D942050d489DBd938a2C909A5d5039A161).
+
+**Now that you understand the context of rebasing tokens, create one named `Rebasing Token`, with the symbol `$RBT`, with the following parameters:**
+
+1. Inherits ERC20.
+2. Rebases RBT, changing the `$RBT` supply porportionally for all token holders.
+3. Rebases with a `int` param `SupplyDelta` that dictates how the supply expands or constricts.
+4. Rebasing logic: Simply use the initial supply, and the total supply (when rebases occur) to calculate a `_scalingFactor`. The `_scalingFactor` is used to adjust token holder's balances proportionally after rebases.
+5. Ensure that the amount transferred when `transfer()` or `transferFrom()` are called are adjusted as per the `_scalingFactor` at the time of the tx.
+
+**Assumptions:**
+
+1. `$RBT` rebasing is called based on some external events. For this exercise it doesn't really matter, but you could imagine that decentralized oracles are querying the price of `$RBT` and if it deviates from some set price then rebases are called.
+2. `$RBT` contract owner could be some treasury contract or something that exists in your imagination ;).
+3. `$RBT` _initialSupply is 1 million tokens.
+4. `$RBT` `decimals` is 18.
+5. `$RBT` is distributed via some imaginary mechanism. Tests to ensure that your challenge submission works will just transfer some `$RBT` to fake users and check that your rebasing calculations work correctly.
 
 Feel free to ask any questions or express any ideas that will help the end user learn through this challenge.
 
 It already has an object in challenges.json which has the name field 'rebasing-token'.
 
+
+<details markdown='1'><summary>👩🏽‍🏫 Fun question: what is an ERC20 that can be easily mistaken as a rebasing token? </summary>
+Answer: An example of a token that exhibits traits that rhyme with rebasing, but is not rebasing, is stETH. stETH does not change its supply, instead its price increases as staking rewards accumulate. 
+</details>
+
+---
 Here are some helpful references:
-*Replace with real resource links if any*
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
+- [AMPL Project Details](https://docs.ampleforth.org/learn/about-the-ampleforth-protocol#:~:text=their%20FORTH%20tokens.-,How%20the%20Ampleforth%20Protocol%20Works,-The%20Ampleforth%20Protocol)
+- [AMPL Github](https://github.com/ampleforth/ampleforth-contracts/tree/master)
+- [AMPL Rebasing Token Code](https://etherscan.deth.net/address/0xD46bA6D942050d489DBd938a2C909A5d5039A161)
 
 *--End of challenge specific section--*
 

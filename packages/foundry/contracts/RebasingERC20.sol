@@ -17,6 +17,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * Upon redemptions, users get RBT, but then... there's some RBT out there in the wild. Rebases have to take this into account. There's always XYZ minted once it's minted. The scalingFactor is affected by the amountActuallyMinted. scalingFactor =  (1e18) * _totalSupply / _initialSupply; where totalSupply = oldTotalSupply +- supplyDelta, BUT supplyDelta must not cause totalSupply to LTE to amountActuallyMinted.
  * Thus, balanceOf() will report the real balance of a user
  * AND previewRedeem() will report estimated amount upon redemption. 
+ * mint() will increase actual total supply, and mint tokens --> it is only callable upon redemption of coupon tokens.
+ * If users just burn coupon tokens, without redeeming... is that allowed? To keep things simple, no.
+ * TODO - how are minted tokens handled when it comes to the math of the rebasing, etc.?
  */
 contract RebasingERC20 is ERC20, Ownable {
     using SafeMath for uint256;
@@ -31,6 +34,11 @@ contract RebasingERC20 is ERC20, Ownable {
      * @notice Cannot use bad _supplyDelta values in rebase.
      */
     error RebasingERC20__InvalidSupplyDelta(uint256 _supplyDelta);
+
+    /**
+     * @notice Cannot carry out a rebase that results in amount lesser than minted & circulating rebasing token.
+     */
+    error RebasingERC20__ResultantTotalLowerThanMintedSupply(uint256 _actualTotalSupply, uint256 _incorrectTotalSupply);
 
     /// State Vars
     uint256 public _totalSupply;
@@ -67,9 +75,13 @@ contract RebasingERC20 is ERC20, Ownable {
         return _balances[account] * _scalingFactor / (1e18);
     }
 
-    // function previewRedeem() public view returns (uint256) {
-
-    // }
+    /**
+     * @notice 
+     * @dev Similar to ERC4626, but this contract doesn't have a vault of underlying tokens, it is the "bank" that mints the underlying tokens.
+     */
+    function previewRedeem(uint256 shares) public view returns (uint256) {
+        return _convertToAssets(shares, Math.Rounding.Floor);
+    }
 
     /**
      * @notice Returns the total supply of the token.
@@ -102,6 +114,9 @@ contract RebasingERC20 is ERC20, Ownable {
             _totalSupply += uint256(supplyDelta);
         }
 
+        // ensures that adjusted _totalSupply respects the already minted and circulating amount of rebase tokens out there.
+        if (_totalSupply < totalSupply()) revert RebasingERC20__ResultantTotalLowerThanMintedSupply(totalSupply(), _totalSupply);
+
         _scalingFactor = (1e18) * _totalSupply / _initialSupply;
 
         emit Rebase(_totalSupply);
@@ -120,16 +135,17 @@ contract RebasingERC20 is ERC20, Ownable {
      * - For all of the above, make sure to do the proper increase or decrease of token balances whilst taking into account the _scalingFactor.
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+        amount = amount * (1e18) / _scalingFactor;
         if (from == address(0)) {
             // Minting tokens
-            _balances[to] += amount * (1e18) / _scalingFactor; // TODO - I think these should be `_balances[to] += amount * (1e18) * _scalingFactor;`
+            _balances[to] += amount;
         } else if (to == address(0)) {
             // Burning tokens
-            _balances[from] -= amount * (1e18) / _scalingFactor;
+            _balances[from] -= amount;
         } else {
             // Transfer between accounts
-            _balances[from] -= amount * (1e18) / _scalingFactor;
-            _balances[to] += amount * (1e18) / _scalingFactor;
+            _balances[from] -= amount;
+            _balances[to] += amount;
         }
     }
 
@@ -165,5 +181,19 @@ contract RebasingERC20 is ERC20, Ownable {
         _approve(sender, _msgSender(), allowance(sender, _msgSender()) - amount);
         emit Transfer(sender, recipient, amount);
         return true;
+    }
+
+    /// Helpers
+
+    function convertToAssets(uint256 shares) public view virtual returns (uint256) {
+        return _convertToAssets(shares, Math.Rounding.Floor);
+    }
+
+    /**
+     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
+     * TODO - change this to reflect rebasing aspect of this contract.
+     */
+    function _convertToAssets(uint256 shares, Math.Rounding rounding) internal view virtual returns (uint256) {
+        return shares.mulDiv(totalAssets() + 1, totalSupply() + 10 ** _decimalsOffset(), rounding);
     }
 }
