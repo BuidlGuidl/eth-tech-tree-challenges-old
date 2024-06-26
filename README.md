@@ -49,10 +49,11 @@ AMPL uses old contracts called `UFragments.sol`, where `Fragments` are the ERC20
 **Assumptions:**
 
 1. `$RBT` rebasing is called based on some external events. For this exercise it doesn't really matter, but you could imagine that decentralized oracles are querying the price of `$RBT` and if it deviates from some set price then rebases are called.
-2. `$RBT` contract owner could be some treasury contract or something that exists in your imagination ;).
+2. `$RBT` contract owner could be some treasury contract or something that exists in your imagination 😉.
 3. `$RBT` _initialSupply is 1 million tokens.
 4. `$RBT` `decimals` is 18.
-5. `$RBT` is distributed via some imaginary mechanism. Tests to ensure that your challenge submission works will just transfer some `$RBT` to fake users and check that your rebasing calculations work correctly.
+5. `$RBT` is distributed via some imaginary mechanism, for now it's just assumed as another ERC20 and thus can be transferred as such. Thus this is not in the scope of the challenge. That said, tests to ensure that your challenge submission works will just transfer some `$RBT` to fake users and check that your rebasing calculations work correctly.
+6. `$RBT` will not be minted using `mint()` function once initial supply created upon contract deployment.
 
 Feel free to ask any questions or express any ideas that will help the end user learn through this challenge.
 
