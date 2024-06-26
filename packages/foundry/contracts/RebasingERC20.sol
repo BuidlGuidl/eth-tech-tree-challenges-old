@@ -16,29 +16,30 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract RebasingERC20 is ERC20, Ownable {
 
     /// Errors
-    /**
-     * @notice Sender requires enough ETH for the transaction.
-     */
-    error RebasingERC20__InsufficientBalance(address _sender, uint256 _amount);
 
     /**
-     * @notice Cannot use bad _supplyDelta values in rebase.
+     * @notice Rebase cannot be zero.
      */
-    error RebasingERC20__InvalidSupplyDelta(uint256 _supplyDelta);
+    error RebasingERC20__DeltaCannotBeZero();
 
     /**
-     * @notice Cannot carry out a rebase that results in amount lesser than minted & circulating rebasing token.
+     * @notice Rebase delta too high.
      */
-    error RebasingERC20__ResultantTotalLowerThanMintedSupply(uint256 _actualTotalSupply, uint256 _incorrectTotalSupply);
+    error RebasingERC20__AbsoluteDeltaTooHigh(int256 delta, uint256 maxDelta);
+
+    /**
+     * @notice Rebase delta not wholly-divisible & thus introduces rounding errors.
+     */
+    error RebasingERC20__DeltaNotWhollyDivisible(int256 delta);
 
     /// State Vars
+
     uint256 public _totalSupply;
     mapping(address => uint256) public _balances;
     uint256 public _scalingFactor;
     uint256 public _initialSupply; 
-    
-    // This is denominated in RBT, because the underlying "constituent points" conversion might change before it's fully paid.
-    mapping(address => mapping(address => uint256)) public _allowedRBT;
+    uint256 public maxDelta; // set once in the constructor.
+    mapping(address => mapping(address => uint256)) public _allowedRBT; // This is denominated in RBT, because the underlying "constituent points" conversion might change before it's fully paid.
 
     /// Events
 
@@ -54,10 +55,11 @@ contract RebasingERC20 is ERC20, Ownable {
      * @dev initialSupply is set to 1 million tokens with 18 decimals.
      */
     constructor() ERC20("RebasingToken", "RBT") {
-        _initialSupply = 1000000 * 10 ** decimals();
+        _initialSupply = 1000000e18;
         _scalingFactor = 1e18; // Initial scaling factor (1.0)
         _balances[msg.sender] = _initialSupply; // aka `_balances[msg.sender] = _initialSupply * (1e18) / _scalingFactor;`
-         _totalSupply = _initialSupply;
+        _totalSupply = _initialSupply;
+        maxDelta = 25000;
     }
 
     /**
@@ -72,31 +74,29 @@ contract RebasingERC20 is ERC20, Ownable {
     }
 
     /**
-     * @dev Adjusts the total supply of the token.
-     * @param supplyDelta The amount to increase or decrease the total supply by.
+     * @notice Adjusts the total supply of the token and updates the scaling factor.
+     * @param delta The amount to increase or decrease the total supply by. Remember that delta needs to be wrt 18 decimals & initial supply was 1 million tokens (1000000e18)
      * @return The new total supply of the token.
      * Requirements:
      * - Write conditional logic such that:
-     *  - Simply return current _totalSupply if supplyDelta == 0
-     *  - Increment _totalSupply based on supplyDelta being > or < 0
+     *  - Simply revert with RebasingERC20__DeltaCannotBeZero if delta == 0
+     *  - To prevent rounding errors, ensure that absolute delta doesn't exceed the maxDelta, and is wholly divisible by 10 ** 6
+     *  - Increment _totalSupply based on delta being > or < 0
      *  - Calculate new _scalingFactor based on _totalSupply and _initialSupply()
      * - return _totalSupply
      * - emit `Rebase` event before returning _totalSupply
      */
-    function rebase(int256 supplyDelta) external onlyOwner returns (uint256) {
-        if (supplyDelta == 0) {
-            emit Rebase(_totalSupply);
-            return _totalSupply;
-        }
+    function rebase(int256 delta) external onlyOwner returns (uint256) {
+        if (delta == 0) revert RebasingERC20__DeltaCannotBeZero();
+        if (abs(delta) > maxDelta) revert RebasingERC20__AbsoluteDeltaTooHigh(delta, maxDelta);
+        if ((delta = delta % int256(10 ** 6)) != 0) revert RebasingERC20__DeltaNotWhollyDivisible(delta); 
 
-        if (supplyDelta < 0) {
-            _totalSupply -= uint256(-supplyDelta);
+        if (delta < 0) {
+            _totalSupply -= uint256(-delta);
         } else {
-            _totalSupply += uint256(supplyDelta);
+            _totalSupply += uint256(delta);
         }
-
         _scalingFactor = (1e18) * _totalSupply / _initialSupply;
-
         emit Rebase(_totalSupply);
         return _totalSupply;
     }
@@ -115,11 +115,13 @@ contract RebasingERC20 is ERC20, Ownable {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         amount = amount * (1e18) / _scalingFactor;
         if (from == address(0)) {
-            // Minting tokens
+            // Minting tokens - recall that minting is only allowable at the deployment of the contract.
             _balances[to] += amount;
         } else if (to == address(0)) {
-            // Burning tokens
+            // Burning tokens - update scaling factors since total supply is changing.
             _balances[from] -= amount;
+            _totalSupply -= amount;
+            _scalingFactor = (1e18) * _totalSupply / _initialSupply;
         } else {
             // Transfer between accounts
             _balances[from] -= amount;
@@ -178,12 +180,9 @@ contract RebasingERC20 is ERC20, Ownable {
     function transferAllFrom(address from, address to) external returns (bool) {
         uint256 constituentValue = _balances[from];
         uint256 value = constituentValue * 1e18 / (_scalingFactor);
-
         _allowedRBT[from][msg.sender] = _allowedRBT[from][msg.sender] - (value);
-
         delete _balances[from];
         _balances[to] = _balances[to] +  (constituentValue);
-
         emit Transfer(from, to, value);
         return true;
     }
@@ -204,7 +203,6 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     function approve(address spender, uint256 value) public override returns (bool) {
         _allowedRBT[msg.sender][spender] = value;
-
         emit Approval(msg.sender, spender, value);
         return true;
     }
@@ -224,7 +222,6 @@ contract RebasingERC20 is ERC20, Ownable {
         _allowedRBT[msg.sender][spender] = _allowedRBT[msg.sender][spender] +  (
             addedValue
         );
-
         emit Approval(msg.sender, spender, _allowedRBT[msg.sender][spender]);
         return true;
     }
@@ -243,9 +240,20 @@ contract RebasingERC20 is ERC20, Ownable {
         _allowedRBT[msg.sender][spender] = (subtractedValue >= oldValue)
             ? 0
             : oldValue - (subtractedValue);
-
         emit Approval(msg.sender, spender, _allowedRBT[msg.sender][spender]);
         return true;
     }
 
+    /// Helper Functions (not part of the challenge)
+
+    function abs(int256 value) public pure returns (uint256) {
+        // Check if the value is negative
+        if (value < 0) {
+            // Return the negated value as unsigned integer
+            return uint256(-value);
+        } else {
+            // Return the value as unsigned integer
+            return uint256(value);
+        }
+    }
 }

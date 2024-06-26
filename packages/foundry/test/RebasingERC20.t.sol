@@ -48,6 +48,14 @@ contract RebasingERC20Test is Test {
         assertEq(token.balanceOf(zoro), zoroBalance1 + transferAmount);
     }
 
+    function testTransferFrom() public {
+        
+    }
+
+    function testTransferAllFrom() public {
+        
+    }
+
     function testApproveAndTransferFrom() public {
         uint256 approveAmount = 500 * 10 ** token.decimals();
         uint256 transferAmount = 300 * 10 ** token.decimals();
@@ -62,6 +70,14 @@ contract RebasingERC20Test is Test {
         assertEq(token.allowance(luffy, zoro), approveAmount - transferAmount);
     }
 
+    function testIncreaseAllowance() public {
+
+    }
+
+    function testDecreaseAllowance() public {
+
+    }
+    
     function testRebasePositive() public {
         int256 supplyDelta = int256(initialBalance);
         uint256 oldTotalSupply = token.totalSupply();
@@ -128,15 +144,15 @@ contract RebasingERC20Test is Test {
 
     }
 
-    /// TODO - unsure if minting is affected with scaling factor etc.
-    function testMint() public {
-
+    function testMintNotOwner() public {
+        
     }
 
-    /// TODO - unsure if minting is affected with scaling factor etc.
-    function testBurn() public {
-
+    function testTransferAllFromAfterRebase() public {
+        
     }
+
+
 
 
     // Not Happy Path Tests
@@ -155,6 +171,16 @@ contract RebasingERC20Test is Test {
         token.rebase(1000);
     }
 
+    function testRebaseTooHigh() public {}
+
+    function testIncreaseAllowanceAboveOwnerBalancer() public {
+
+    }
+
+    function testDecreaseAllowanceBelowZero() public {}
+
+    function testTransferAllFromWhenUserHasZero() public {}
+
     function testFailRebaseBadSupplyDelta() public {
         // Owner tries to rebase the contract with a bad value for supplyDelta
         vm.startPrank(luffy);
@@ -162,4 +188,18 @@ contract RebasingERC20Test is Test {
         token.rebase(type(int256).min);
         vm.stopPrank();
     }
+
+    /// UNCERTAIN TESTS
+    
+    // TODO - SCOPE: do we want to update total supply when minting or burning occurs? If so, then we need to check that total supply is updated, and that scaling factor is updated.
+
+    function testMint() public {
+
+    }
+
+    function testBurn() public {
+        
+    }
+
+    
 }
