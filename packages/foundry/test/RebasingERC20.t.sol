@@ -40,6 +40,12 @@ contract RebasingERC20Test is Test {
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
+    /**
+     * @notice Emitted when a burn occurs.
+     * @param amount The tokens being burnt.
+     */
+    event Burn(address indexed sender, uint256 amount);
+
 
     /**
      * Total Supply is set up to be 1 million RBT
@@ -242,38 +248,39 @@ contract RebasingERC20Test is Test {
         assertEq(token.balanceOf(zoro), expectedZoroBalance);
     }
 
-    // // // TODO - mainly left as copied from testTransferFromAfterRebase
-    // function testTransferAllFromAfterRebase(uint256 transferAmount) public {
-    //     transferAmount = bound(transferAmount, 1e18, 10000e18);
-    //     int256 supplyDelta = 24000e18;
-    //     token.transfer(zoro, transferAmount);
+    // TODO - mainly left as copied from testTransferFromAfterRebase
+    // Simply checking rebase then transferAllFrom works right.
+    function testTransferAllFromAfterRebase(uint256 transferAmount) public {
+        transferAmount = bound(transferAmount, 1e18, 10000e18);
+        int256 supplyDelta = 24000e18;
+        token.transfer(zoro, transferAmount);
 
-    //     token.rebase(supplyDelta);
+        token.rebase(supplyDelta);
 
-    //     uint256 approveAmount = 10000e18;
-    //     token.approve(zoro, approveAmount);
-    //     assertEq(token.allowance(luffy, zoro), approveAmount);
-    //     vm.prank(zoro);
-    //     token.transferFrom(luffy, zoro, transferAmount);
+        uint256 approveAmount = 10000e18;
+        token.approve(zoro, approveAmount);
+        assertEq(token.allowance(luffy, zoro), approveAmount);
+        vm.prank(zoro);
+        token.transferFrom(luffy, zoro, transferAmount);
 
-    //     // check that balances are updated properly taking into account scalingFactor by first checking the internal, then the ultimate, balances against manual calcs.
+        // check that balances are updated properly taking into account scalingFactor by first checking the internal, then the ultimate, balances against manual calcs.
 
-    //     // check that internal balances are updated properly
-    //     // calculate expected internal balance
-    //     // compare against reported internal balance
-    //     uint256 newScalingFactor = token._scalingFactor();
+        // check that internal balances are updated properly
+        // calculate expected internal balance
+        // compare against reported internal balance
+        uint256 newScalingFactor = token._scalingFactor();
 
-    //     uint256 expectedLuffyInternalBalance = (luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor);
-    //     uint256 expectedZoroInternalBalance = (zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor);
+        uint256 expectedLuffyInternalBalance = (luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor);
+        uint256 expectedZoroInternalBalance = (zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor);
         
-    //     uint256 expectedLuffyBalance = ((luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
-    //     uint256 expectedZoroBalance = ((zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
+        uint256 expectedLuffyBalance = ((luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
+        uint256 expectedZoroBalance = ((zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
 
-    //     assertEq(token.internalBalanceOf(luffy), expectedLuffyInternalBalance);
-    //     assertEq(token.internalBalanceOf(zoro), expectedZoroInternalBalance);
-    //     assertEq(token.balanceOf(luffy), expectedLuffyBalance);
-    //     assertEq(token.balanceOf(zoro), expectedZoroBalance);
-    // }
+        assertEq(token.internalBalanceOf(luffy), expectedLuffyInternalBalance);
+        assertEq(token.internalBalanceOf(zoro), expectedZoroInternalBalance);
+        assertEq(token.balanceOf(luffy), expectedLuffyBalance);
+        assertEq(token.balanceOf(zoro), expectedZoroBalance);
+    }
 
     // Not Happy Path Tests
 
@@ -330,12 +337,24 @@ contract RebasingERC20Test is Test {
         vm.expectRevert(bytes(abi.encodeWithSelector(RebasingERC20.RebasingERC20__DeltaNotWhollyDivisible.selector, badDelta)));
         token.rebase(badDelta);
     }
-
-    /// UNCERTAIN TESTS
     
-    // TODO - SCOPE: do we want to update total supply when minting or burning occurs? If so, then we need to check that total supply is updated, and that scaling factor is updated.
-    function testBurn() public {
-        
+    function testBurn(uint256 amount) public {
+        // user burns their tokens
+        // check that _balances[user] has changed
+        // " that _totalSupply has decreased
+        // check that _scalingFactor has changed too
+        vm.startPrank(luffy);
+        amount = bound(amount, 1e18, 10e18);
+        vm.expectEmit(true, false, false, true);
+        emit Burn(luffy, amount);
+        token.burn(amount);
+        vm.stopPrank();
+
+        uint256 newTotalSupply = token._totalSupply();
+        uint256 newScalingFactor = token._scalingFactor();
+        assertEq(token.balanceOf(luffy), ((luffyBalance1 - amount) * newScalingFactor) / 1e18);
+        assertEq(newTotalSupply, 1000000e18 - amount);
+        assertEq(token._scalingFactor(), (1e18) * newTotalSupply / initialBalance);
     }
 
     /// Helper Functions

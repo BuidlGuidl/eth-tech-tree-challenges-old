@@ -56,6 +56,13 @@ contract RebasingERC20 is ERC20, Ownable {
     event Rebase(uint256 totalSupply);
 
     /**
+     * @notice Emitted when a burn occurs.
+     * @param amount The tokens being burnt.
+     */
+    event Burn(address indexed sender, uint256 amount);
+
+
+    /**
      * @notice Sets Total Supply and Scaling Factor.
      * @dev Constructor that gives msg.sender all of the existing tokens.
      * @dev initialSupply is set to 1 million tokens with 18 decimals.
@@ -170,7 +177,7 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     function transferAllFrom(address from, address to) external returns (bool) {
         if (_balances[from] == 0) revert RebasingERC20__SenderHasZeroTokens(from); 
-        
+
         uint256 constituentValue = _balances[from];
         uint256 value = constituentValue * 1e18 / (_scalingFactor);
         allowedRBT[from][msg.sender] = allowedRBT[from][msg.sender] - (value);
@@ -235,6 +242,12 @@ contract RebasingERC20 is ERC20, Ownable {
             : oldValue - (subtractedValue);
         emit Approval(msg.sender, spender, allowedRBT[msg.sender][spender]);
         return true;
+    }
+
+    function burn(uint256 amount) public {
+        // _burn(msg.sender, amount);
+        _beforeTokenTransfer(msg.sender, address(0), amount);
+        emit Burn(msg.sender, amount);
     }
 
     /// Helper Functions (not part of the challenge)
