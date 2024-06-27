@@ -32,6 +32,12 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     error RebasingERC20__DeltaNotWhollyDivisible(int256 delta);
 
+    /**
+     * @notice Cannot transferAllFrom() when sender address has zero tokens.
+     */
+    error RebasingERC20__SenderHasZeroTokens(address sender);
+
+
     /// State Vars
 
     uint256 public _totalSupply;
@@ -71,6 +77,10 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     function balanceOf(address account) public view override returns (uint256) {
         return _balances[account] * _scalingFactor / (1e18);
+    }
+
+    function internalBalanceOf(address account) public view returns (uint256) {
+        return _balances[account];
     }
 
     /**
@@ -159,6 +169,8 @@ contract RebasingERC20 is ERC20, Ownable {
      * - Return true if tx was successful.
      */
     function transferAllFrom(address from, address to) external returns (bool) {
+        if (_balances[from] == 0) revert RebasingERC20__SenderHasZeroTokens(from); 
+        
         uint256 constituentValue = _balances[from];
         uint256 value = constituentValue * 1e18 / (_scalingFactor);
         allowedRBT[from][msg.sender] = allowedRBT[from][msg.sender] - (value);
