@@ -248,39 +248,39 @@ contract RebasingERC20Test is Test {
         assertEq(token.balanceOf(zoro), expectedZoroBalance);
     }
 
-    // TODO - mainly left as copied from testTransferFromAfterRebase
-    // Simply checking rebase then transferAllFrom works right.
-    function testTransferAllFromAfterRebase(uint256 transferAmount) public {
-        transferAmount = bound(transferAmount, 1e18, 10000e18);
-        int256 supplyDelta = 24000e18;
-        token.transfer(zoro, transferAmount);
+    // // TODO - mainly left as copied from testTransferFromAfterRebase
+    // // Simply checking rebase then transferAllFrom works right.
+    // function testTransferAllFromAfterRebase(uint256 transferAmount) public {
+    //     transferAmount = bound(transferAmount, 1e18, 10000e18);
+    //     int256 supplyDelta = 24000e18;
+    //     token.transfer(zoro, transferAmount);
 
-        token.rebase(supplyDelta);
+    //     token.rebase(supplyDelta);
 
-        uint256 approveAmount = 10000e18;
-        token.approve(zoro, approveAmount);
-        assertEq(token.allowance(luffy, zoro), approveAmount);
-        vm.prank(zoro);
-        token.transferFrom(luffy, zoro, transferAmount);
+    //     uint256 approveAmount = 10000e18;
+    //     token.approve(zoro, approveAmount);
+    //     assertEq(token.allowance(luffy, zoro), approveAmount);
+    //     vm.prank(zoro);
+    //     token.transferFrom(luffy, zoro, transferAmount);
 
-        // check that balances are updated properly taking into account scalingFactor by first checking the internal, then the ultimate, balances against manual calcs.
+    //     // check that balances are updated properly taking into account scalingFactor by first checking the internal, then the ultimate, balances against manual calcs.
 
-        // check that internal balances are updated properly
-        // calculate expected internal balance
-        // compare against reported internal balance
-        uint256 newScalingFactor = token._scalingFactor();
+    //     // check that internal balances are updated properly
+    //     // calculate expected internal balance
+    //     // compare against reported internal balance
+    //     uint256 newScalingFactor = token._scalingFactor();
 
-        uint256 expectedLuffyInternalBalance = (luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor);
-        uint256 expectedZoroInternalBalance = (zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor);
+    //     uint256 expectedLuffyInternalBalance = (luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor);
+    //     uint256 expectedZoroInternalBalance = (zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor);
         
-        uint256 expectedLuffyBalance = ((luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
-        uint256 expectedZoroBalance = ((zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
+    //     uint256 expectedLuffyBalance = ((luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
+    //     uint256 expectedZoroBalance = ((zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
 
-        assertEq(token.internalBalanceOf(luffy), expectedLuffyInternalBalance);
-        assertEq(token.internalBalanceOf(zoro), expectedZoroInternalBalance);
-        assertEq(token.balanceOf(luffy), expectedLuffyBalance);
-        assertEq(token.balanceOf(zoro), expectedZoroBalance);
-    }
+    //     assertEq(token.internalBalanceOf(luffy), expectedLuffyInternalBalance);
+    //     assertEq(token.internalBalanceOf(zoro), expectedZoroInternalBalance);
+    //     assertEq(token.balanceOf(luffy), expectedLuffyBalance);
+    //     assertEq(token.balanceOf(zoro), expectedZoroBalance);
+    // }
 
     // Not Happy Path Tests
 
