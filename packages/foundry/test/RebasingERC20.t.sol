@@ -57,7 +57,7 @@ contract RebasingERC20Test is Test {
     function setUp() public {
         luffy = address(this);
         zoro = address(0x123);
-        token = new RebasingERC20(); // TODO - check logs to see if it is calling mint or not on the RBT! If it is, then keep the mint logic within the transfer stuff. If it isn't, then you can remove that, and the remove the README assumption #6
+        token = new RebasingERC20();
         token.transfer(zoro, 1000 * 10 ** token.decimals());
         luffyBalance1 = token.balanceOf(luffy);
         zoroBalance1 = token.balanceOf(zoro);
@@ -91,7 +91,7 @@ contract RebasingERC20Test is Test {
         assertEq(token.allowance(luffy, zoro), approveAmount - transferAmount);
     }
 
-    function testTransferAllFrom() public {
+    function testTransferFromAllTokens() public {
         uint256 approveAmount = token.balanceOf(zoro);
         vm.prank(zoro);
         vm.expectEmit(true, true, false, true);
@@ -100,7 +100,17 @@ contract RebasingERC20Test is Test {
         assertEq(token.allowedRBT(zoro, luffy), approveAmount);
         vm.expectEmit(true, true, false, true);
         emit Transfer(zoro, luffy, approveAmount);
-        token.transferAllFrom(zoro, luffy);
+        token.transferFrom(zoro, luffy, approveAmount);
+        assertEq(token.balanceOf(zoro), 0);
+        assertEq(token.balanceOf(luffy), luffyBalance1 + zoroBalance1);
+    }
+
+    function testTransferAllTokens() public {
+        uint256 approveAmount = token.balanceOf(zoro);
+        vm.startPrank(zoro);
+        vm.expectEmit(true, true, false, true);
+        emit Transfer(zoro, luffy, approveAmount);
+        token.transfer(luffy, approveAmount);
         assertEq(token.balanceOf(zoro), 0);
         assertEq(token.balanceOf(luffy), luffyBalance1 + zoroBalance1);
     }
@@ -151,37 +161,6 @@ contract RebasingERC20Test is Test {
         assertEq(newTotalSupply, oldTotalSupply - absSupplyDelta);
         assertEq(token.balanceOf(luffy), luffyBalance1 * (newTotalSupply) / oldTotalSupply);
         assertEq(token.balanceOf(zoro), (zoroBalance1 * newTotalSupply) / oldTotalSupply);
-    }
-
-    /**
-     * Test that rounding errors don't arise
-     * TODO - see below
-     * `balanceOf` reports the product of `SF` & `_balance[user]`. `transfers` update `_balances`, and `rebase` updates `SF`. So what we're confirming is if there is unseen rounding errors arising if we do raw math matching what should be happening in the txs. But that is literally just doing the same math.... so I'm not sure how to check if the rounding issues are arising. I need to think about this more.
-     */
-    function testRoundingErrors() public {
-        // Perform multiple small transfers to check for rounding errors
-        uint256 transferAmount = 1 * 10 ** token.decimals(); // Small transfer amount
-        uint256 numTransfers = 1000;
-
-        // uint256 initialLuffyInternalBalances = token.internalBalanceOf(luffy);
-        // uint256 initialZoroInternalBalances = token.internalBalanceOf(zoro);
-
-        // Do multiple txs including rebasing to attempt to generate  rounding errors
-        for (uint256 i = 0; i < numTransfers; i++) {
-            vm.prank(luffy);
-            token.transfer(zoro, transferAmount);
-            int256 supplyDelta = 24000e18;
-            token.rebase(supplyDelta);
-            vm.prank(zoro);
-            token.transfer(luffy, transferAmount / 2);
-        }
-
-        // Check for rounding errors
-        uint256 finalLuffyBalance = token.balanceOf(luffy);
-        // uint256 finalZoroBalance = token.balanceOf(zoro);
-
-        assertEq(finalLuffyBalance, (token.internalBalanceOf(luffy) * token._scalingFactor() / 1e18));
-        // assertEq(finalZoroBalance, zoroBalance1);
     }
     
     /**
@@ -247,40 +226,6 @@ contract RebasingERC20Test is Test {
         assertEq(token.balanceOf(luffy), expectedLuffyBalance);
         assertEq(token.balanceOf(zoro), expectedZoroBalance);
     }
-
-    // // TODO - mainly left as copied from testTransferFromAfterRebase
-    // // Simply checking rebase then transferAllFrom works right.
-    // function testTransferAllFromAfterRebase(uint256 transferAmount) public {
-    //     transferAmount = bound(transferAmount, 1e18, 10000e18);
-    //     int256 supplyDelta = 24000e18;
-    //     token.transfer(zoro, transferAmount);
-
-    //     token.rebase(supplyDelta);
-
-    //     uint256 approveAmount = 10000e18;
-    //     token.approve(zoro, approveAmount);
-    //     assertEq(token.allowance(luffy, zoro), approveAmount);
-    //     vm.prank(zoro);
-    //     token.transferFrom(luffy, zoro, transferAmount);
-
-    //     // check that balances are updated properly taking into account scalingFactor by first checking the internal, then the ultimate, balances against manual calcs.
-
-    //     // check that internal balances are updated properly
-    //     // calculate expected internal balance
-    //     // compare against reported internal balance
-    //     uint256 newScalingFactor = token._scalingFactor();
-
-    //     uint256 expectedLuffyInternalBalance = (luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor);
-    //     uint256 expectedZoroInternalBalance = (zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor);
-        
-    //     uint256 expectedLuffyBalance = ((luffyBalance1 - transferAmount) - (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
-    //     uint256 expectedZoroBalance = ((zoroBalance1 + transferAmount) + (transferAmount * 1e18 / newScalingFactor)) * newScalingFactor / 1e18;
-
-    //     assertEq(token.internalBalanceOf(luffy), expectedLuffyInternalBalance);
-    //     assertEq(token.internalBalanceOf(zoro), expectedZoroInternalBalance);
-    //     assertEq(token.balanceOf(luffy), expectedLuffyBalance);
-    //     assertEq(token.balanceOf(zoro), expectedZoroBalance);
-    // }
 
     // Not Happy Path Tests
 

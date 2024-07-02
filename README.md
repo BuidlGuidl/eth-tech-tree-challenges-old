@@ -28,9 +28,9 @@ foundryup
 
 ## Challenge Description
 
-This challenge will require users to write an ERC20 contract that contains rebasing token logic such that when a event occurs. 
+This challenge will require users to write an ERC20 contract that contains rebasing token logic. 
 
-Rebasing tokens automatically adjust its supply to target a specific price. Thus the token supply is increased or decreased periodically, where the effects are applied to all token holders, proportionally. Rebasing is an alternative price stabilization method versus traditional market mechanisms.
+Rebasing tokens automatically adjust its supply typically based on some external reason, for example: to target a specific price. As the token supply is increased or decreased periodically, the effects are applied to all token holders, proportionally. Rebasing can be used as an alternative price stabilization method versus traditional market mechanisms.
 
 An example of a rebasing token is the Ampleforth token, AMPL.
 
@@ -42,7 +42,7 @@ AMPL uses old contracts called `UFragments.sol`, where `Fragments` are the ERC20
 
 1. Inherits ERC20.
 2. Rebases RBT, changing the `$RBT` supply porportionally for all token holders.
-3. Rebases with a `int` param `SupplyDelta` that dictates how the supply expands or constricts.
+3. Rebases with a `int` param `SupplyDelta` that dictates how the supply expands or constricts. Rebases can be positive or negative.
 4. Rebasing logic: Simply use the initial supply, and the total supply (when rebases occur) to calculate a `_scalingFactor`. The `_scalingFactor` is used to adjust token holder's balances proportionally after rebases.
 5. Ensure that the amount transferred when `transfer()` or `transferFrom()` are called are adjusted as per the `_scalingFactor` at the time of the tx.
 
@@ -53,7 +53,8 @@ AMPL uses old contracts called `UFragments.sol`, where `Fragments` are the ERC20
 3. `$RBT` _initialSupply is 1 million tokens.
 4. `$RBT` `decimals` is 18.
 5. `$RBT` is distributed via some imaginary mechanism, for now it's just assumed as another ERC20 and thus can be transferred as such. Thus this is not in the scope of the challenge. That said, tests to ensure that your challenge submission works will just transfer some `$RBT` to fake users and check that your rebasing calculations work correctly.
-6. `$RBT` will not be minted using `mint()` function once initial supply created upon contract deployment.
+6. Minting new tokens is not handled via normal mint() functions, token balances are changed as per the rebasing logic implemented within this contract.
+7. Burning is handled via the `_beforeTokenTransfer()` hook instead of the typical `burn()` function seen with other ERC20s.
 
 Feel free to ask any questions or express any ideas that will help the end user learn through this challenge.
 

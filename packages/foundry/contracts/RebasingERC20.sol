@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev This smart contract is PURELY EDUCATIONAL, and is not to be used in production code. It is up to the user's discretion to make their own production code, run tests, have audits, etc.
  * Rebasing tokens automatically adjust its supply to target a specific price. Thus the token supply is increased or decreased periodically, where the effects are applied to all token holders, proportionally. Rebasing is an alternative price stabilization method versus traditional market mechanisms.
  * Thus, balanceOf() and token transferrance will report the real balance of a user, adjusted by rebasing effects.
+ * @dev Minting new tokens is not handled via normal mint() functions, token balances are changed as per the rebasing logic implemented within this contract.
  */
 contract RebasingERC20 is ERC20, Ownable {
 
@@ -245,7 +246,6 @@ contract RebasingERC20 is ERC20, Ownable {
     }
 
     function burn(uint256 amount) public {
-        // _burn(msg.sender, amount);
         _beforeTokenTransfer(msg.sender, address(0), amount);
         emit Burn(msg.sender, amount);
     }
@@ -253,22 +253,18 @@ contract RebasingERC20 is ERC20, Ownable {
     /// Helper Functions (not part of the challenge)
 
     /**
-     * @dev Hook that is called before any transfer of tokens. This includes minting and burning.
+     * @dev Hook that is called before any transfer of tokens. This includes burning.
      * @param from The address from which tokens are transferred.
      * @param to The address to which tokens are transferred.
      * @param amount The amount of tokens to be transferred.
      * Requirements
-     * - Write conditional statement for minting, aka when from address is address(0)
      * - Write conditional statement for burning, aka when to address is address(0)
      * - Finally handle if the sequence is just a transference of tokens.
      * - For all of the above, make sure to increase or decrease token balances whilst taking into account the _scalingFactor.
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         amount = amount * (1e18) / _scalingFactor;
-        if (from == address(0)) {
-            // Minting tokens - recall that minting is only allowable at the deployment of the contract.
-            _balances[to] += amount;
-        } else if (to == address(0)) {
+        if (to == address(0)) {
             // Burning tokens - update scaling factors since total supply is changing.
             _balances[from] -= amount;
             _totalSupply -= amount;
