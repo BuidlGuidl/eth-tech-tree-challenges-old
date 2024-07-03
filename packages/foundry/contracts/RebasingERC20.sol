@@ -15,9 +15,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Minting new tokens is not handled via normal mint() functions, token balances are changed as per the rebasing logic implemented within this contract.
  */
 contract RebasingERC20 is ERC20, Ownable {
-
-    /// Errors
-
+    ///////////////////
+    // Errors
+    //////////////////
     /**
      * @notice Rebase cannot be zero.
      */
@@ -33,14 +33,9 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     error RebasingERC20__DeltaNotWhollyDivisible(int256 delta);
 
-    /**
-     * @notice Cannot transferAllFrom() when sender address has zero tokens.
-     */
-    error RebasingERC20__SenderHasZeroTokens(address sender);
-
-
-    /// State Vars
-
+    ///////////////////
+    // State Variables
+    //////////////////
     uint256 public _totalSupply;
     mapping(address => uint256) public _balances;
     uint256 public _scalingFactor;
@@ -48,8 +43,9 @@ contract RebasingERC20 is ERC20, Ownable {
     uint256 public maxDelta; // set once in the constructor.
     mapping(address => mapping(address => uint256)) public allowedRBT; // This is denominated in RBT, because the underlying "constituent points" conversion might change before it's fully paid.
 
-    /// Events
-
+    ///////////////////
+    //  Events
+    //////////////////
     /**
      * @dev Emitted when a rebase occurs.
      * @param totalSupply The new total supply of the token after the rebase.
@@ -62,7 +58,9 @@ contract RebasingERC20 is ERC20, Ownable {
      */
     event Burn(address indexed sender, uint256 amount);
 
-
+    ///////////////////
+    //  Constructor
+    //////////////////
     /**
      * @notice Sets Total Supply and Scaling Factor.
      * @dev Constructor that gives msg.sender all of the existing tokens.
@@ -76,6 +74,9 @@ contract RebasingERC20 is ERC20, Ownable {
         maxDelta = 25000e18;
     }
 
+    ///////////////////
+    //  Functions
+    //////////////////
     /**
      * @notice Overridden `balanceOf()` function from ERC20.sol because rebasing token rebases using scaling factor in this contract.
      * @param account The address querying for its balance.
@@ -162,32 +163,6 @@ contract RebasingERC20 is ERC20, Ownable {
         return true;
     }
 
-    /// NEW FUNCTIONS
-
-    /**
-     * @dev Transfer all balance tokens from one address to another.
-     * @param from The address you want to send tokens from.
-     * @param to The address you want to transfer to.
-     * Requirements:
-     * - Calculate the `value` of $RBT to transfer, use the scaling factor and appropriate decimals.
-     * - Update the `allowedRBT` mapping for `from` and `msg.sender`
-     * - Delete the `_balances[from]`
-     * - Increase the `_balances[to]` by the correct amount
-     * - Emit the Transfer event as per ERC20 standard.
-     * - Return true if tx was successful.
-     */
-    function transferAllFrom(address from, address to) external returns (bool) {
-        if (_balances[from] == 0) revert RebasingERC20__SenderHasZeroTokens(from); 
-
-        uint256 constituentValue = _balances[from];
-        uint256 value = constituentValue * 1e18 / (_scalingFactor);
-        allowedRBT[from][msg.sender] = allowedRBT[from][msg.sender] - (value);
-        delete _balances[from];
-        _balances[to] = _balances[to] +  (constituentValue);
-        emit Transfer(from, to, value);
-        return true;
-    }
-
     /**
      * @dev Approve the passed address to spend the specified amount of tokens on behalf of
      * msg.sender. This method is included for ERC20 compatibility.
@@ -250,8 +225,9 @@ contract RebasingERC20 is ERC20, Ownable {
         emit Burn(msg.sender, amount);
     }
 
-    /// Helper Functions (not part of the challenge)
-
+    ///////////////////
+    //  Helper Functions
+    //////////////////
     /**
      * @dev Hook that is called before any transfer of tokens. This includes burning.
      * @param from The address from which tokens are transferred.

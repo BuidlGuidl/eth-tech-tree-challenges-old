@@ -263,16 +263,6 @@ contract RebasingERC20Test is Test {
         assertEq(token.allowance(luffy, zoro), 0);
     }
 
-    function testTransferAllFromWhenUserHasZero() public {
-        uint256 approveAmount = type(uint256).max;
-        vm.prank(zoro);
-        token.approve(luffy, approveAmount);
-      
-        token.transferAllFrom(zoro, luffy);
-        vm.expectRevert(bytes(abi.encodeWithSelector(RebasingERC20.RebasingERC20__SenderHasZeroTokens.selector, zoro)));
-        token.transferAllFrom(zoro, luffy);
-    }
-
     // Try rebasing with zero
     // Try to rebase with not-wholly divisible value
     function testRebaseBadSupplyDelta() public {
