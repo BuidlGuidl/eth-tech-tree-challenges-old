@@ -1,9 +1,6 @@
-# Template For Challenge - ETH Tech Tree
-*--Change the above "Template For Challenge" to the challenge name--*
-*--Add a paragraph sized story that pulls in the challenger to their mission--*
+# 🎁 Token Voting Delegation - ETH Tech Tree
 
-
-*--End of story section--*
+In this challenge, you will build a governance system that includes both a governance token and a governance contract. Token holders will be able to delegate their votes to another address, and those with sufficient tokens will be able to create and vote on proposals. This will provide a comprehensive understanding of governance models in blockchain projects.
 
 ## Contents
 - [Requirements](#requirements)
