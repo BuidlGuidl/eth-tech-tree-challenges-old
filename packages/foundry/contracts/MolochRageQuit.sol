@@ -4,19 +4,19 @@ pragma solidity >=0.8.0 <0.9.0;
 ////////////////////
 // Errors
 ////////////////////
-error MolochRageQuit__ProposalNotApproved();
-error MolochRageQuit__UnauthorizedAccess();
-error MolochRageQuit__InsufficientShares();
 error MolochRageQuit__ZeroAddress();
-error MolochRageQuit__InvalidSharesAmount();
-error MolochRageQuit__FailedTransfer();
-error MolochRageQuit__ProposalNotFound();
-error MolochRageQuit__NotEnoughVotes();
-error MolochRageQuit__InsufficientETH();
 error MolochRageQuit__AlreadyVoted();
 error MolochRageQuit__MemberExists();
+error MolochRageQuit__FailedTransfer();
+error MolochRageQuit__NotEnoughVotes();
+error MolochRageQuit__InsufficientETH();
+error MolochRageQuit__FailelToExecute();
+error MolochRageQuit__ProposalNotFound();
+error MolochRageQuit__UnauthorizedAccess();
+error MolochRageQuit__InsufficientShares();
+error MolochRageQuit__InvalidSharesAmount();
+error MolochRageQuit__ProposalNotApproved();
 error MolochRageQuit__ProposalDeadlineNotReached();
-
 ////////////////////
 // Contract
 ////////////////////
@@ -68,7 +68,7 @@ contract MolochRageQuit {
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
-
+    event ProposalValueRefunded(address proposer, uint256 amount);
     ///////////////////
     // Modifiers
     ///////////////////
@@ -116,12 +116,15 @@ contract MolochRageQuit {
         bytes memory data,
         uint256 value,
         uint256 deadline
-    ) external onlyMember {
+    ) external payable {
         if (contractAddr == address(0)) {
             revert MolochRageQuit__ZeroAddress();
         }
         if (deadline <= block.timestamp) {
             revert MolochRageQuit__InvalidSharesAmount();
+        }
+        if (msg.value < value) {
+            revert MolochRageQuit__InsufficientETH();
         }
 
         proposalCount++;
@@ -204,14 +207,15 @@ contract MolochRageQuit {
                     revert MolochRageQuit__FailedTransfer();
                 }
             }
-            revert MolochRageQuit__ProposalNotApproved();
+            emit ProposalValueRefunded(proposal.proposer, proposal.value);
         }
-
-        (bool success, ) = proposal.contractAddr.call{value: proposal.value}(
-            proposal.data
-        );
-        if (!success) {
-            revert MolochRageQuit__FailedTransfer();
+        if (proposal.contractAddr != address(this)) {
+            (bool success, ) = proposal.contractAddr.call{
+                value: proposal.value
+            }(proposal.data);
+            if (!success) {
+                revert MolochRageQuit__FailelToExecute();
+            }
         }
 
         emit ProposalExecuted(proposalId);
@@ -226,7 +230,9 @@ contract MolochRageQuit {
      * - The amount of ETH sent must match the proposal's ETH amount.
      * Emits a `SharesExchanged` event.
      */
-    function exchangeShares(uint256 proposalId) external payable onlyMember {
+    function exchangeShares(
+        uint256 proposalId
+    ) public payable onlyContractAddress {
         Proposal storage proposal = proposals[proposalId];
         if (proposal.proposer != msg.sender || !proposal.approved) {
             revert MolochRageQuit__ProposalNotApproved();
