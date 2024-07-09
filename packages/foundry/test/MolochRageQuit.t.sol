@@ -15,8 +15,9 @@ contract MolochRageQuitTest is Test {
     uint256 public PROPOSAL_AMOUNT = 1 ether;
     uint256 public PROPOSAL_SHARES = 100;
     address public CONTRACT_ADDR = address(this);
+    uint256 public PROPOSAL_ID = 1;
     bytes public addMemberdata =
-        abi.encodeWithSignature("addMember(address)", member1);
+        abi.encodeWithSignature("addMember(address)", member1, PROPOSAL_ID);
     uint256 public DEADLINE = block.timestamp + 1 days;
     event ProposalCreated(
         uint256 proposalId,
