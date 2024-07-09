@@ -27,11 +27,6 @@ contract MolochRageQuitTest is Test {
         uint256 deadline
     );
     event ProposalApproved(uint256 proposalId, address approver);
-    event SharesExchanged(
-        address proposer,
-        uint256 ethAmount,
-        uint256 shareAmount
-    );
     event RageQuit(address member, uint256 shareAmount, uint256 ethAmount);
     event MemberAdded(address member);
     event MemberRemoved(address member);
