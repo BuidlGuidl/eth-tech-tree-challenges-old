@@ -128,6 +128,7 @@ contract MolochRageQuit {
         }
 
         proposalCount++;
+        totalEth += msg.value;
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposer = msg.sender;
         proposal.contractAddr = contractAddr;
@@ -222,33 +223,6 @@ contract MolochRageQuit {
     }
 
     /**
-     * @dev Exchange ETH for shares after approval.
-     * @param proposalId The ID of the approved proposal.
-     * Requirements:
-     * - The caller must be the proposer of the proposal.
-     * - The proposal must be approved.
-     * - The amount of ETH sent must match the proposal's ETH amount.
-     * Emits a `SharesExchanged` event.
-     */
-    function exchangeShares(
-        uint256 proposalId
-    ) public payable onlyContractAddress {
-        Proposal storage proposal = proposals[proposalId];
-        if (proposal.proposer != msg.sender || !proposal.approved) {
-            revert MolochRageQuit__ProposalNotApproved();
-        }
-        if (msg.value < proposal.value) {
-            revert MolochRageQuit__InsufficientETH();
-        }
-
-        totalEth += msg.value;
-        totalShares += proposal.value;
-        shares[msg.sender] += proposal.value;
-
-        emit SharesExchanged(msg.sender, msg.value, proposal.value);
-    }
-
-    /**
      * @dev Rage quit and exchange shares for ETH.
      * Requirements:
      * - The caller must have shares and must be a member.
@@ -259,7 +233,7 @@ contract MolochRageQuit {
      * - Revert with ` MolochRageQuit__FailedTransfer` if the transfer fails.
      * Emits a `RageQuit` event.
      */
-    function rageQuit() external onlyMember {
+    function __rageQuit() private onlyContractAddress {
         uint256 memberShares = shares[msg.sender];
         if (memberShares == 0) {
             revert MolochRageQuit__InsufficientShares();
@@ -278,17 +252,28 @@ contract MolochRageQuit {
     /**
      * @dev Add a new member to the DAO.
      * @param newMember The address of the new member.
+     * @param proposalId The ID of the approved proposal.
      * Requirements:
      * - Only callable by the contract itself.
+     * - The proposal must be approved.
      * - The address must not already be a member.
      * - Mark the address as a member.
      * Emits a `MemberAdded` event.
      */
-    function addMember(address newMember) external onlyContractAddress {
+    function addMember(
+        address newMember,
+        uint256 proposalId
+    ) external onlyContractAddress {
+        Proposal storage proposal = proposals[proposalId];
+        if (proposal.proposer != msg.sender || !proposal.approved) {
+            revert MolochRageQuit__ProposalNotApproved();
+        }
         if (members[newMember]) {
             revert MolochRageQuit__MemberExists();
         }
         members[newMember] = true;
+        totalShares += proposal.value;
+        shares[msg.sender] += proposal.value;
         emit MemberAdded(newMember);
     }
 
@@ -301,6 +286,7 @@ contract MolochRageQuit {
      * Emits an `MemberRemoved` event.
      */
     function removeMember(address member) external onlyContractAddress {
+        __rageQuit();
         members[member] = false;
         emit MemberRemoved(member);
     }
