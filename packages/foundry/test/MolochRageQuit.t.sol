@@ -11,7 +11,7 @@ contract MolochRageQuitTest is Test {
     address public nonMember1 = vm.addr(3);
     address public nonMember2 = vm.addr(4);
     uint256 public constant INITIAL_ETH = 1000 ether;
-    uint256 public constant QUORUM = 2;
+    uint256 public constant QUORUM = 1;
     uint256 public PROPOSAL_AMOUNT = 1 ether;
     uint256 public PROPOSAL_SHARES = 100;
     address public CONTRACT_ADDR = address(this);
@@ -32,6 +32,8 @@ contract MolochRageQuitTest is Test {
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
+    event ProposalExecuted(uint256 proposalId);
+    event ProposalValueRefunded(address proposer, uint256 amount);
 
     function setUp() public {
         dao = new MolochRageQuit(QUORUM);
@@ -66,5 +68,23 @@ contract MolochRageQuitTest is Test {
     function testFailProposeCreation() public {
         vm.prank(nonMember1);
         dao.propose(address(dao), addMemberdata, PROPOSAL_AMOUNT, DEADLINE);
+    }
+
+    //execute proposal
+    function testProposalExecution() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+
+        (, , , uint256 value, , , ) = dao.proposals(1);
+        assertEq(value, PROPOSAL_AMOUNT);
+        vm.expectEmit(true, true, true, true);
+        emit ProposalApproved(PROPOSAL_ID, CONTRACT_ADDR);
+        dao.vote(PROPOSAL_ID);
+        // emit ProposalExecuted(PROPOSAL_ID);
+        // dao.executeProposal(PROPOSAL_ID);
     }
 }

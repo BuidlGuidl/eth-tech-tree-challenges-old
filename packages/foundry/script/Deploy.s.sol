@@ -6,7 +6,7 @@ import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
-    uint256 public constant QUORUM = 2;
+    uint256 public constant QUORUM = 1;
 
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();

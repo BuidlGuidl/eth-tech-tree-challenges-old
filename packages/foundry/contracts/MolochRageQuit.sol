@@ -212,6 +212,11 @@ contract MolochRageQuit {
             if (!success) {
                 revert MolochRageQuit__FailelToExecute();
             }
+        } else {
+            (bool success, ) = proposal.contractAddr.call(proposal.data);
+            if (!success) {
+                revert MolochRageQuit__FailelToExecute();
+            }
         }
 
         emit ProposalExecuted(proposalId);
