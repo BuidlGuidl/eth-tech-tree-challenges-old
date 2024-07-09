@@ -233,16 +233,16 @@ contract MolochRageQuit {
      * - Revert with ` MolochRageQuit__FailedTransfer` if the transfer fails.
      * Emits a `RageQuit` event.
      */
-    function __rageQuit() private onlyContractAddress {
-        uint256 memberShares = shares[msg.sender];
+    function __rageQuit(address member) private onlyContractAddress {
+        uint256 memberShares = shares[member];
         if (memberShares == 0) {
             revert MolochRageQuit__InsufficientShares();
         }
         uint256 ethAmount = (memberShares * totalEth) / totalShares;
         totalShares -= memberShares;
         totalEth -= ethAmount;
-        shares[msg.sender] = 0;
-        (bool sent, ) = msg.sender.call{value: ethAmount}("");
+        shares[member] = 0;
+        (bool sent, ) = payable(member).call{value: ethAmount}("");
         if (!sent) {
             revert MolochRageQuit__FailedTransfer();
         }
@@ -273,7 +273,7 @@ contract MolochRageQuit {
         }
         members[newMember] = true;
         totalShares += proposal.value;
-        shares[msg.sender] += proposal.value;
+        shares[newMember] += proposal.value;
         emit MemberAdded(newMember);
     }
 
@@ -286,7 +286,7 @@ contract MolochRageQuit {
      * Emits an `MemberRemoved` event.
      */
     function removeMember(address member) external onlyContractAddress {
-        __rageQuit();
+        __rageQuit(member);
         members[member] = false;
         emit MemberRemoved(member);
     }
