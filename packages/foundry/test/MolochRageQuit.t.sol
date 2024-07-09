@@ -50,7 +50,12 @@ contract MolochRageQuitTest is Test {
             PROPOSAL_AMOUNT,
             DEADLINE
         );
-        dao.propose(address(dao), addMemberdata, PROPOSAL_AMOUNT, DEADLINE);
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
 
         (, , , uint256 value, , uint256 deadline, ) = dao.proposals(1);
         assertEq(value, PROPOSAL_AMOUNT);
