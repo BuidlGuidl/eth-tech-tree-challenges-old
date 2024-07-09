@@ -17,7 +17,11 @@ contract MolochRageQuitTest is Test {
     address public CONTRACT_ADDR = address(this);
     uint256 public PROPOSAL_ID = 1;
     bytes public addMemberdata =
-        abi.encodeWithSignature("addMember(address)", member1, PROPOSAL_ID);
+        abi.encodeWithSignature(
+            "addMember(address,uint256)",
+            member1,
+            PROPOSAL_ID
+        );
     uint256 public DEADLINE = block.timestamp + 1 days;
     event ProposalCreated(
         uint256 proposalId,
@@ -84,7 +88,12 @@ contract MolochRageQuitTest is Test {
         vm.expectEmit(true, true, true, true);
         emit ProposalApproved(PROPOSAL_ID, CONTRACT_ADDR);
         dao.vote(PROPOSAL_ID);
-        // emit ProposalExecuted(PROPOSAL_ID);
-        // dao.executeProposal(PROPOSAL_ID);
+        vm.warp(block.timestamp + 2 days);
+        vm.expectEmit(true, true, true, true);
+        emit MemberAdded(member1);
+        dao.executeProposal(PROPOSAL_ID);
     }
+
+    fallback() external {}
+    receive() external payable {}
 }

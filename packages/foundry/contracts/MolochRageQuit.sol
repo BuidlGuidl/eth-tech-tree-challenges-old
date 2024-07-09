@@ -265,7 +265,7 @@ contract MolochRageQuit {
         uint256 proposalId
     ) external onlyContractAddress {
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.proposer != msg.sender || !proposal.approved) {
+        if (!proposal.approved) {
             revert MolochRageQuit__ProposalNotApproved();
         }
         if (members[newMember]) {
