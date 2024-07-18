@@ -23,7 +23,7 @@ contract MolochRageQuitTest is Test {
             PROPOSAL_ID
         );
     bytes public removMemberdata =
-        abi.encodeWithSignature("removeMember(address)", member1);
+        abi.encodeWithSignature("rageQuit(address)", member1);
     uint256 public DEADLINE = block.timestamp + 1 days;
     event ProposalCreated(
         uint256 proposalId,
@@ -228,7 +228,7 @@ contract MolochRageQuitTest is Test {
         dao.vote(PROPOSAL_ID);
     }
 
-    function testRemoveMember() public {
+    function testRageQuit() public {
         dao.propose{value: PROPOSAL_AMOUNT}(
             address(dao),
             addMemberdata,
@@ -245,8 +245,6 @@ contract MolochRageQuitTest is Test {
         vm.warp(block.timestamp + 2 days);
         vm.expectEmit(true, true, true, true);
         emit RageQuit(member1, PROPOSAL_AMOUNT);
-        vm.expectEmit(true, true, true, true);
-        emit MemberRemoved(member1);
         dao.executeProposal(proposalId);
         assertFalse(dao.members(member1));
     }

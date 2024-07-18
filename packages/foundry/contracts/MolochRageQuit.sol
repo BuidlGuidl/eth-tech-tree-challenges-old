@@ -18,6 +18,7 @@ error MolochRageQuit__InsufficientShares();
 error MolochRageQuit__InvalidDeadline();
 error MolochRageQuit__ProposalNotApproved();
 error MolochRageQuit__ProposalDeadlineNotReached();
+
 ////////////////////
 // Contract
 ////////////////////
@@ -65,6 +66,7 @@ contract MolochRageQuit {
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
     event ProposalValueRefunded(address proposer, uint256 amount);
+
     ///////////////////
     // Modifiers
     ///////////////////
@@ -87,6 +89,7 @@ contract MolochRageQuit {
         }
         _;
     }
+
     ///////////////////
     // Constructor
     ///////////////////
@@ -106,8 +109,9 @@ contract MolochRageQuit {
      * @param value The ETH value to send with the transaction.
      * @param deadline The timestamp until when the proposal is valid.
      * Requirements:
-     * - `contractAddr` should not be zero address.
-     * - `deadline` should be in the future.
+     * - `contractAddr` cannot be the zero address. Reverts with MolochRageQuit__ZeroAddress if the contract address is zero.
+     * - `deadline` should be in the future. Reverts with MolochRageQuit__InvalidDeadline if the deadline is in the past.
+     * - `msg.value` must be at least  `value`. Reverts with MolochRageQuit__InsufficientETH if insufficient ETH is sent.
      * - Increment the proposal count.
      * - Create a new proposal.
      * Emits a `ProposalCreated` event.
@@ -151,11 +155,9 @@ contract MolochRageQuit {
      * @dev Vote on a proposal.
      * @param proposalId The ID of the proposal to vote on.
      * Requirements:
-     * - Revert with ` MolochRageQuit__ProposalNotFound` if the proposal does not exist.
-     * - Revert with ` MolochRageQuit__AlreadyVoted` if the caller has already voted on the proposal.
-     * - Caller must be a member.
-     * - Proposal must exist.
-     * - Caller must not have already voted on the proposal.
+     * - The proposal must exist. use proposalExists modifier to check if there is a proposal.
+     * - Caller must be a member. make use of onlyMember modifier.
+     * - Caller must not have already voted on the proposal. Reverts with MolochRageQuit__AlreadyVoted if the caller has already voted.
      * - Increment the proposal's vote count.
      * - Mark the caller as having voted on the proposal.
      * - If the proposal has enough votes, mark it as approved.
@@ -186,11 +188,13 @@ contract MolochRageQuit {
      * @dev Execute an approved proposal after the deadline.
      * @param proposalId The ID of the proposal to execute.
      * Requirements:
-     * - The proposal must be approved.
-     * - The proposal deadline must be over.
+     * - The proposal must be approved. Use proposalExists modifier to check if there is a proposal.
+     * - The proposal deadline must be over. Reverts with MolochRageQuit__ProposalDeadlineNotReached if the deadline is not reached.
      * - Execute the calldata with the value.
-     * - If the proposal is rejected, refund any value deposited.
-     * Emits a `ProposalExecuted` event.
+     * - If the proposal is rejected: if the deadline has passed but it has not been approved, refund any value deposited. Reverts with MolochRageQuit__FailedTransfer if the transfer fails.
+     * - Emit a `ProposalValueRefunded` event if the proposal is not approved.
+     * - if the proposal is approved and the deadline has passed: execute the calldata with the value. Reverts with MolochRageQuit__FailedToExecute if the execution fails.
+     * - Emit a `ProposalExecuted` event if the proposal is executed.
      */
     function executeProposal(
         uint256 proposalId
@@ -232,40 +236,16 @@ contract MolochRageQuit {
     }
 
     /**
-     * @dev Rage quit and exchange shares for ETH.
-     * Requirements:
-     * - The caller must have shares and must be a member.
-     * - Calculate the amount of ETH to return to the caller.
-     * - Update the total shares and total ETH.
-     * - Mark the caller as having 0 shares.
-     * - Transfer the ETH after calculating the share of eth to send to the caller.
-     * - Revert with ` MolochRageQuit__FailedTransfer` if the transfer fails.
-     * Emits a `RageQuit` event.
-     */
-    function __rageQuit(address member) private onlyContractAddress {
-        uint256 memberShare = shares[member];
-        if (memberShare == 0) {
-            revert MolochRageQuit__InsufficientShares();
-        }
-
-        totalEth -= memberShare;
-        shares[member] = 0;
-        (bool sent, ) = payable(member).call{value: memberShare}("");
-        if (!sent) {
-            revert MolochRageQuit__FailedTransfer();
-        }
-        emit RageQuit(member, memberShare);
-    }
-
-    /**
      * @dev Add a new member to the DAO.
      * @param newMember The address of the new member.
-     * @param proposalId The ID of the approved proposal.
+     * @param proposalId The ID of the approved proposal which is the current proposalCount + 1.
      * Requirements:
-     * - Only callable by the contract itself.
-     * - The proposal must be approved.
-     * - The address must not already be a member.
+     * - Only callable by the contract itself. Reverts with MolochRageQuit__UnauthorizedAccess if called by any other address.
+     * - The proposal must be approved. Reverts with MolochRageQuit__ProposalNotApproved if the proposal is not approved.
+     * - The address must not already be a member. Reverts with MolochRageQuit__MemberExists if the address is already a member.
      * - Mark the address as a member.
+     * - Increment the total shares by adding proposal value.
+     * - Set the shares of the new member to the proposal value.
      * Emits a `MemberAdded` event.
      */
     function addMember(
@@ -286,18 +266,26 @@ contract MolochRageQuit {
     }
 
     /**
-     * @dev Remove a member from the DAO.
-     * @param member The address of the member to remove.
+     * @dev Rage quit and exchange shares for ETH.
      * Requirements:
-     * - Only callable by the contract itself.
-     * - Mark the member as not a member.
-     * Emits an `MemberRemoved` event.
+     * - The address must be a member. make use of onlyMember modifier.
+     * - Reverts with MolochRageQuit__FailedTransfer if the transfer fails.
+     * - Calculate the amount of ETH to return to the caller.
+     * - Update the total shares and total ETH.
+     * - Mark the caller as having 0 shares.
+     * - Transfer the ETH to the caller.
+     * - Mark member as non member(revoke membership).
+     * Emits a `RageQuit` event.
      */
-    function removeMember(
-        address member
-    ) external onlyContractAddress onlyMember(member) {
-        __rageQuit(member);
+    function rageQuit(address member) public onlyMember(member) {
+        uint256 memberShare = shares[member];
+        totalEth -= memberShare;
+        shares[member] = 0;
+        (bool sent, ) = payable(member).call{value: memberShare}("");
+        if (!sent) {
+            revert MolochRageQuit__FailedTransfer();
+        }
         members[member] = false;
-        emit MemberRemoved(member);
+        emit RageQuit(member, memberShare);
     }
 }
