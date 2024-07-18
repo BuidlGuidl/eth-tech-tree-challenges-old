@@ -23,7 +23,11 @@ contract MolochRageQuitTest is Test {
             PROPOSAL_ID
         );
     bytes public removMemberdata =
-        abi.encodeWithSignature("rageQuit(address)", member1);
+        abi.encodeWithSignature(
+            "rageQuit(address,uint256)",
+            member1,
+            PROPOSAL_ID + 1
+        );
     uint256 public DEADLINE = block.timestamp + 1 days;
     event ProposalCreated(
         uint256 proposalId,

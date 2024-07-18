@@ -89,6 +89,13 @@ contract MolochRageQuit {
         _;
     }
 
+    modifier isProposalApproved(uint256 proposalId) {
+        if (!proposals[proposalId].approved) {
+            revert MolochRageQuit__ProposalNotApproved();
+        }
+        _;
+    }
+
     ///////////////////
     // Constructor
     ///////////////////
@@ -154,8 +161,8 @@ contract MolochRageQuit {
      * @dev Vote on a proposal.
      * @param proposalId The ID of the proposal to vote on.
      * Requirements:
-     * - The proposal must exist. use proposalExists modifier to check if there is a proposal.
      * - Caller must be a member. make use of onlyMember modifier.
+     * - The proposal must exist. use proposalExists modifier to check if there is a proposal.
      * - Caller must not have already voted on the proposal. Reverts with MolochRageQuit__AlreadyVoted if the caller has already voted.
      * - Increment the proposal's vote count.
      * - Mark the caller as having voted on the proposal.
@@ -237,10 +244,11 @@ contract MolochRageQuit {
     /**
      * @dev Add a new member to the DAO.
      * @param newMember The address of the new member.
-     * @param proposalId The ID of the approved proposal which is the current proposalCount + 1.
+     * @param proposalId The ID of the approved proposal which is the current proposalCount.
      * Requirements:
-     * - Only callable by the contract itself. Reverts with MolochRageQuit__UnauthorizedAccess if called by any other address.
-     * - The proposal must be approved. Reverts with MolochRageQuit__ProposalNotApproved if the proposal is not approved.
+     * - Only callable by the contract itself. User onlyContractAddress to be sure only the contract can call the function.
+     * - The proposal must exist. Use proposalExists modifier to check if there is a proposal.
+     * - The proposal must be approved. make use of isProposalApproved modifier if the proposal is not approved.
      * - The address must not already be a member. Reverts with MolochRageQuit__MemberExists if the address is already a member.
      * - Mark the address as a member.
      * - Increment the total shares by adding proposal value.
@@ -250,11 +258,14 @@ contract MolochRageQuit {
     function addMember(
         address newMember,
         uint256 proposalId
-    ) external onlyContractAddress {
+    )
+        external
+        onlyContractAddress
+        proposalExists(proposalId)
+        isProposalApproved(proposalId)
+    {
         Proposal storage proposal = proposals[proposalId];
-        if (!proposal.approved) {
-            revert MolochRageQuit__ProposalNotApproved();
-        }
+
         if (members[newMember]) {
             revert MolochRageQuit__MemberExists();
         }
@@ -266,8 +277,11 @@ contract MolochRageQuit {
 
     /**
      * @dev Rage quit and exchange shares for ETH.
+     * @param member The address of the new member.
+     * @param proposalId The ID of the approved proposal which is the current proposalCount.
      * Requirements:
      * - The address must be a member. make use of onlyMember modifier.
+     * - The proposal must exist. use proposalExists modifier to check if there is a proposal.
      * - Reverts with MolochRageQuit__FailedTransfer if the transfer fails.
      * - Calculate the amount of ETH to return to the caller.
      * - Update the total shares and total ETH.
@@ -276,7 +290,15 @@ contract MolochRageQuit {
      * - Mark member as non member(revoke membership).
      * Emits a `RageQuit` event.
      */
-    function rageQuit(address member) public onlyMember(member) {
+    function rageQuit(
+        address member,
+        uint256 proposalId
+    )
+        public
+        onlyMember(member)
+        proposalExists(proposalId)
+        isProposalApproved(proposalId)
+    {
         uint256 memberShare = shares[member];
         totalEth -= memberShare;
         shares[member] = 0;
