@@ -22,6 +22,8 @@ contract MolochRageQuitTest is Test {
             member1,
             PROPOSAL_ID
         );
+    bytes public removMemberdata =
+        abi.encodeWithSignature("removeMember(address)", member1);
     uint256 public DEADLINE = block.timestamp + 1 days;
     event ProposalCreated(
         uint256 proposalId,
@@ -32,7 +34,7 @@ contract MolochRageQuitTest is Test {
         uint256 deadline
     );
     event ProposalApproved(uint256 proposalId, address approver);
-    event RageQuit(address member, uint256 shareAmount, uint256 ethAmount);
+    event RageQuit(address member, uint256 shareAmount);
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
@@ -41,12 +43,11 @@ contract MolochRageQuitTest is Test {
 
     function setUp() public {
         dao = new MolochRageQuit(QUORUM);
-        // Fund members with some ETH for testing
         vm.deal(member1, INITIAL_ETH);
         vm.deal(member2, INITIAL_ETH);
     }
-    // Test that the proposal is created and also emit event when created
-    function testProposeCreation() public {
+
+    function testProposalCreation() public {
         vm.expectEmit(true, true, true, true);
         emit ProposalCreated(
             1,
@@ -68,13 +69,89 @@ contract MolochRageQuitTest is Test {
         assertEq(deadline, DEADLINE);
     }
 
-    //test should fail if msg.sender is not a member
-    function testFailProposeCreation() public {
-        vm.prank(nonMember1);
-        dao.propose(address(dao), addMemberdata, PROPOSAL_AMOUNT, DEADLINE);
+    function testProposalAddressZero() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__ZeroAddress.selector)
+        );
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(0),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
     }
 
-    //execute proposal
+    function testInvalidProposalDeadline() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__InvalidDeadline.selector)
+        );
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            block.timestamp - 1
+        );
+    }
+
+    function testProposalAmount() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__InsufficientETH.selector)
+        );
+        dao.propose{value: 0}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+    }
+
+    function testProposalExists() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__ProposalNotFound.selector)
+        );
+        dao.vote(PROPOSAL_ID);
+    }
+
+    function testMemberCanVote() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        dao.vote(PROPOSAL_ID);
+        (, , , , uint256 votes, , ) = dao.proposals(PROPOSAL_ID);
+        assertEq(votes, 1);
+    }
+
+    function testMemberCanOnlyVoteOnce() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        dao.vote(PROPOSAL_ID);
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__AlreadyVoted.selector)
+        );
+        dao.vote(PROPOSAL_ID);
+    }
+
+    function testNonMembersCannotVote() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        vm.prank(nonMember1);
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__NotAMamber.selector)
+        );
+        dao.vote(PROPOSAL_ID);
+    }
+
     function testProposalExecution() public {
         dao.propose{value: PROPOSAL_AMOUNT}(
             address(dao),
@@ -94,6 +171,85 @@ contract MolochRageQuitTest is Test {
         dao.executeProposal(PROPOSAL_ID);
     }
 
-    fallback() external {}
+    function testAddMember() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        dao.vote(PROPOSAL_ID);
+        vm.warp(block.timestamp + 2 days);
+        vm.expectEmit(true, true, true, true);
+        emit MemberAdded(member1);
+        dao.executeProposal(PROPOSAL_ID);
+        assertTrue(dao.members(member1));
+    }
+
+    function testDeadlineNotReached() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MolochRageQuit__ProposalDeadlineNotReached.selector
+            )
+        );
+        dao.executeProposal(PROPOSAL_ID);
+    }
+
+    function testProposalRejectedAndAmountRefunded() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        vm.warp(block.timestamp + 2 days);
+        vm.expectEmit(true, true, true, true);
+        emit ProposalValueRefunded(CONTRACT_ADDR, PROPOSAL_AMOUNT);
+        dao.executeProposal(PROPOSAL_ID);
+    }
+
+    function testProposalAlreadyVotedEvent() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        dao.vote(PROPOSAL_ID);
+        vm.expectRevert(
+            abi.encodeWithSelector(MolochRageQuit__AlreadyVoted.selector)
+        );
+        dao.vote(PROPOSAL_ID);
+    }
+
+    function testRemoveMember() public {
+        dao.propose{value: PROPOSAL_AMOUNT}(
+            address(dao),
+            addMemberdata,
+            PROPOSAL_AMOUNT,
+            DEADLINE
+        );
+        dao.vote(PROPOSAL_ID);
+        vm.warp(block.timestamp + 2 days);
+        dao.executeProposal(PROPOSAL_ID);
+        assertTrue(dao.members(member1));
+        dao.propose(address(dao), removMemberdata, 0, block.timestamp + 1 days);
+        uint256 proposalId = PROPOSAL_ID + 1;
+        dao.vote(proposalId);
+        vm.warp(block.timestamp + 2 days);
+        vm.expectEmit(true, true, true, true);
+        emit RageQuit(member1, PROPOSAL_AMOUNT);
+        vm.expectEmit(true, true, true, true);
+        emit MemberRemoved(member1);
+        dao.executeProposal(proposalId);
+        assertFalse(dao.members(member1));
+    }
+
     receive() external payable {}
 }

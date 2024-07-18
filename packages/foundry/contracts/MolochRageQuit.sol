@@ -4,17 +4,18 @@ pragma solidity >=0.8.0 <0.9.0;
 ////////////////////
 // Errors
 ////////////////////
+error MolochRageQuit__NotAMamber();
 error MolochRageQuit__ZeroAddress();
 error MolochRageQuit__AlreadyVoted();
 error MolochRageQuit__MemberExists();
 error MolochRageQuit__FailedTransfer();
 error MolochRageQuit__NotEnoughVotes();
 error MolochRageQuit__InsufficientETH();
-error MolochRageQuit__FailelToExecute();
+error MolochRageQuit__FailedToExecute();
 error MolochRageQuit__ProposalNotFound();
 error MolochRageQuit__UnauthorizedAccess();
 error MolochRageQuit__InsufficientShares();
-error MolochRageQuit__InvalidSharesAmount();
+error MolochRageQuit__InvalidDeadline();
 error MolochRageQuit__ProposalNotApproved();
 error MolochRageQuit__ProposalDeadlineNotReached();
 ////////////////////
@@ -59,7 +60,7 @@ contract MolochRageQuit {
     );
     event ProposalApproved(uint256 proposalId, address approver);
     event ProposalExecuted(uint256 proposalId);
-    event RageQuit(address member, uint256 shareAmount, uint256 ethAmount);
+    event RageQuit(address member, uint256 shareAmount);
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
@@ -67,9 +68,9 @@ contract MolochRageQuit {
     ///////////////////
     // Modifiers
     ///////////////////
-    modifier onlyMember() {
-        if (!members[msg.sender]) {
-            revert MolochRageQuit__UnauthorizedAccess();
+    modifier onlyMember(address _member) {
+        if (!members[_member]) {
+            revert MolochRageQuit__NotAMamber();
         }
         _;
     }
@@ -80,7 +81,12 @@ contract MolochRageQuit {
         }
         _;
     }
-
+    modifier proposalExists(uint256 proposalId) {
+        if (proposalId > proposalCount) {
+            revert MolochRageQuit__ProposalNotFound();
+        }
+        _;
+    }
     ///////////////////
     // Constructor
     ///////////////////
@@ -116,7 +122,7 @@ contract MolochRageQuit {
             revert MolochRageQuit__ZeroAddress();
         }
         if (deadline <= block.timestamp) {
-            revert MolochRageQuit__InvalidSharesAmount();
+            revert MolochRageQuit__InvalidDeadline();
         }
         if (msg.value < value) {
             revert MolochRageQuit__InsufficientETH();
@@ -156,11 +162,11 @@ contract MolochRageQuit {
      * Emits a `Voted` event.
      * Emits a `ProposalApproved` event if the proposal is approved.
      */
-    function vote(uint256 proposalId) external onlyMember {
+    function vote(
+        uint256 proposalId
+    ) external onlyMember(msg.sender) proposalExists(proposalId) {
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.proposer == address(0)) {
-            revert MolochRageQuit__ProposalNotFound();
-        }
+
         if (proposal.voted[msg.sender]) {
             revert MolochRageQuit__AlreadyVoted();
         }
@@ -186,7 +192,9 @@ contract MolochRageQuit {
      * - If the proposal is rejected, refund any value deposited.
      * Emits a `ProposalExecuted` event.
      */
-    function executeProposal(uint256 proposalId) external {
+    function executeProposal(
+        uint256 proposalId
+    ) external proposalExists(proposalId) {
         Proposal storage proposal = proposals[proposalId];
 
         if (block.timestamp < proposal.deadline) {
@@ -204,22 +212,23 @@ contract MolochRageQuit {
                 }
             }
             emit ProposalValueRefunded(proposal.proposer, proposal.value);
-        }
-        if (proposal.contractAddr != address(this)) {
-            (bool success, ) = proposal.contractAddr.call{
-                value: proposal.value
-            }(proposal.data);
-            if (!success) {
-                revert MolochRageQuit__FailelToExecute();
-            }
         } else {
-            (bool success, ) = proposal.contractAddr.call(proposal.data);
-            if (!success) {
-                revert MolochRageQuit__FailelToExecute();
+            if (proposal.contractAddr != address(this)) {
+                (bool success, ) = proposal.contractAddr.call{
+                    value: proposal.value
+                }(proposal.data);
+                if (!success) {
+                    revert MolochRageQuit__FailedToExecute();
+                }
+            } else {
+                (bool success, ) = proposal.contractAddr.call(proposal.data);
+                if (!success) {
+                    revert MolochRageQuit__FailedToExecute();
+                }
             }
-        }
 
-        emit ProposalExecuted(proposalId);
+            emit ProposalExecuted(proposalId);
+        }
     }
 
     /**
@@ -234,19 +243,18 @@ contract MolochRageQuit {
      * Emits a `RageQuit` event.
      */
     function __rageQuit(address member) private onlyContractAddress {
-        uint256 memberShares = shares[member];
-        if (memberShares == 0) {
+        uint256 memberShare = shares[member];
+        if (memberShare == 0) {
             revert MolochRageQuit__InsufficientShares();
         }
-        uint256 ethAmount = (memberShares * totalEth) / totalShares;
-        totalShares -= memberShares;
-        totalEth -= ethAmount;
+
+        totalEth -= memberShare;
         shares[member] = 0;
-        (bool sent, ) = payable(member).call{value: ethAmount}("");
+        (bool sent, ) = payable(member).call{value: memberShare}("");
         if (!sent) {
             revert MolochRageQuit__FailedTransfer();
         }
-        emit RageQuit(msg.sender, memberShares, ethAmount);
+        emit RageQuit(member, memberShare);
     }
 
     /**
@@ -273,7 +281,7 @@ contract MolochRageQuit {
         }
         members[newMember] = true;
         totalShares += proposal.value;
-        shares[newMember] += proposal.value;
+        shares[newMember] = proposal.value;
         emit MemberAdded(newMember);
     }
 
@@ -285,7 +293,9 @@ contract MolochRageQuit {
      * - Mark the member as not a member.
      * Emits an `MemberRemoved` event.
      */
-    function removeMember(address member) external onlyContractAddress {
+    function removeMember(
+        address member
+    ) external onlyContractAddress onlyMember(member) {
         __rageQuit(member);
         members[member] = false;
         emit MemberRemoved(member);
