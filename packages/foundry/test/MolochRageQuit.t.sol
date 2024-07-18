@@ -36,7 +36,6 @@ contract MolochRageQuitTest is Test {
     event ProposalApproved(uint256 proposalId, address approver);
     event RageQuit(address member, uint256 shareAmount);
     event MemberAdded(address member);
-    event MemberRemoved(address member);
     event Voted(uint256 proposalId, address voter);
     event ProposalExecuted(uint256 proposalId);
     event ProposalValueRefunded(address proposer, uint256 amount);
