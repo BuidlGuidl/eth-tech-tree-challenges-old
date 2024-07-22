@@ -46,8 +46,7 @@ contract WrappedETH {
      * - Emits a `Deposit` event with the caller's address and the amount of Ether deposited.
      */
     function deposit() public payable {
-        balanceOf[msg.sender] += msg.value;
-        emit Deposit(msg.sender, msg.value);
+
     }
 
     /**
@@ -59,11 +58,7 @@ contract WrappedETH {
      * - Emits a `Withdrawal` event with the caller's address and the amount of Ether withdrawn.
      */
     function withdraw(uint amount) public {
-        if (balanceOf[msg.sender] < amount) revert InsufficientWETHBalance(msg.sender, balanceOf[msg.sender], amount);
-        balanceOf[msg.sender] -= amount;
-        (bool sent, ) = msg.sender.call{value: amount}("");
-        if (!sent) revert FailedToSendEther(msg.sender, amount);
-        emit Withdrawal(msg.sender, amount);
+        
     }
 
     /**
@@ -74,7 +69,7 @@ contract WrappedETH {
      * - The total supply is equal to the balance of the contract.
      */
     function totalSupply() public view returns (uint) {
-        return address(this).balance;
+        
     }
 
     /**
@@ -88,9 +83,7 @@ contract WrappedETH {
      * - Emits an `Approval` event with the caller's address, the approved address, and the amount of tokens approved.
      */
     function approve(address spender, uint amount) public returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
-        return true;
+        
     }
 
     /**
@@ -110,21 +103,7 @@ contract WrappedETH {
         address to,
         uint amount
     ) public returns (bool) {
-        if (balanceOf[from] < amount) revert ERC20InsufficientBalance(from, balanceOf[from], amount);
-
-        if (
-            from != msg.sender && allowance[from][msg.sender] != type(uint256).max
-        ) {
-            if (allowance[from][msg.sender] < amount) revert ERC20InsufficientAllowance(msg.sender, allowance[from][msg.sender], amount);
-            allowance[from][msg.sender] -= amount;
-        }
-
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-
-        emit Transfer(from, to, amount);
-
-        return true;
+        
     }
 
     /**
@@ -138,7 +117,7 @@ contract WrappedETH {
      * - Emits a `Transfer` event with the caller's address, the approved address, and the amount of tokens approved.
      */
     function transfer(address to, uint amount) public returns (bool) {
-        return transferFrom(msg.sender, to, amount);
+        
     }
 
     /**
@@ -147,7 +126,7 @@ contract WrappedETH {
      * - Should call the `deposit` function to handle any received Ether.
      */
     fallback() external payable {
-        deposit();
+        
     }
 
     /**
@@ -156,6 +135,6 @@ contract WrappedETH {
      * - Should call the `deposit` function to handle any received Ether.
      */
     receive() external payable {
-        deposit();
+        
     }
 }
