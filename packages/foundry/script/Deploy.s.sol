@@ -1,11 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/SocialRecoveryWallet.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
+
+    address[] chosenGuardianList;
 
     function run() external {
         uint256 deployerPrivateKey = setupLocalhostEnv();
@@ -15,11 +17,12 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+
+        SocialRecoveryWallet socialRecoveryWallet = new SocialRecoveryWallet(chosenGuardianList, 2);
         console.logString(
             string.concat(
-                "Challenge deployed at: ",
-                vm.toString(address(challenge))
+                "SocialRecoveryWallet deployed at: ",
+                vm.toString(address(socialRecoveryWallet))
             )
         );
         vm.stopBroadcast();
