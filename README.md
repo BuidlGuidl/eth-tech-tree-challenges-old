@@ -13,6 +13,8 @@ Before you begin, you need to install the following tools:
 - [Git](https://git-scm.com/downloads)
 - [Foundryup](https://book.getfoundry.sh/getting-started/installation)
 
+__For Windows users we highly recommend using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) or Git Bash as your terminal app.__
+
 ## Start Here
 Run the following commands in your terminal:
 ```
