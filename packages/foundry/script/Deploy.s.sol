@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/Governance.sol";
+import "../contracts/DecentralizedResistanceToken.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,7 +16,9 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+        uint256 votingPeriod = 86400; // 1 day in seconds
+        DecentralizedResistanceToken voteToken = new DecentralizedResistanceToken(1000000 * 10**18); // 1,000,000 tokens
+        Governance challenge = new Governance(address(voteToken), votingPeriod);
         console.logString(
             string.concat(
                 "Challenge deployed at: ",

@@ -1,9 +1,5 @@
-# Template For Challenge - ETH Tech Tree
-*--Change the above "Template For Challenge" to the challenge name--*
-*--Add a paragraph sized story that pulls in the challenger to their mission--*
-
-
-*--End of story section--*
+# DAO governance proposals and Voting - ETH Tech Tree
+In a dystopian future where megacorporations have seized control over all aspects of life, a brave group of technologists and activists form an underground movement known as The Decentralized Resistance. Their mission is to create a new society governed by the people, free from the tyranny of corporate overlords. They believe that blockchain technology holds the key to building a fair and transparent governance system. As a key developer in The Decentralized Resistance, you are tasked with creating the smart contracts that will enable this new society to thrive.
 
 ## Contents
 - [Requirements](#requirements)
@@ -29,16 +25,18 @@ foundryup
 ```
 
 ## Challenge Description
-*--Edit this section--*
-Write challenge description here...
+The Decentralized Resistance has grown rapidly, attracting members from all walks of life who are united in their desire for freedom and self-governance. To ensure that every member's voice is heard, the resistance needs a secure and transparent voting system.
 
-Here are some helpful references:
-*Replace with real resource links if any*
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
+Your task is to create a smart contract that allows token holders to propose and vote on various proposals. For this challenge, you will implement a contract that supports the following:
 
-*--End of challenge specific section--*
+**Proposal Creation:** Token holders can create proposals. Each proposal has a title, a unique ID, a voting deadline, and an address of the creator.
+
+**Voting:** Token holders can vote on proposals with one of three predefined options: Yea, Nay, or Abstain. The weight of their vote is determined by the number of tokens they hold.
+
+**Result Calculation:** The system calculates the result of the vote after the voting period ends.
+
+You will start your task in `packages/foundry/contracts/Governance.sol`. Use your Solidity skills to enable The Decentralized Resistance to govern itself effectively! 
+Follow the requirements of the contract to complete the challenge 100%.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
