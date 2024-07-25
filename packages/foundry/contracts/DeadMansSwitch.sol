@@ -9,6 +9,7 @@ pragma solidity 0.8.26;
  * @dev This smart contract is PURELY EDUCATIONAL, and is not to be used in production code. It is up to the user's discretion to make their own production code, run tests, have audits, etc.
  */
 contract DeadMansSwitch {
+
     ///////////////////
     // Errors
     ///////////////////
