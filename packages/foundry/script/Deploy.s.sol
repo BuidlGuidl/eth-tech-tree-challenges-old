@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/DeadMansSwitch.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,16 +15,16 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+        DeadMansSwitch deadMansSwitch = new DeadMansSwitch();
         console.logString(
             string.concat(
-                "Challenge deployed at: ",
-                vm.toString(address(challenge))
+                "DeadMansSwitch deployed at: ",
+                vm.toString(address(deadMansSwitch))
             )
         );
         vm.stopBroadcast();
         /**
-         * This function generates the file containing the contracts Abi definitions.
+         * This function generates the file containing the contracts ABI definitions.
          * These definitions are used to derive the types needed in the custom scaffold-eth hooks, for example.
          * This function should be called last.
          */
