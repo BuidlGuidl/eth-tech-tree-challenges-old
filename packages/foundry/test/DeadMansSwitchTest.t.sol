@@ -80,9 +80,11 @@ contract DeadMansSwitchTest is Test {
         vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
         vm.startPrank(NON_CONTRACT_USER);
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
+        (uint balanceBefore, , ) = deadMansSwitch.users(NON_CONTRACT_USER);
         deadMansSwitch.withdraw(ONE_THOUSAND);
-        (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
-        assertEq(balance, 0);
+        (uint balanceAfter, , ) = deadMansSwitch.users(NON_CONTRACT_USER);
+        assertEq(balanceBefore, ONE_THOUSAND);
+        assertEq(balanceAfter, 0);
     }
 
     // Test withdrawing funds by the user
@@ -207,7 +209,8 @@ contract DeadMansSwitchTest is Test {
         vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
         vm.startPrank(NON_CONTRACT_USER);
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
-        emit DeadMansSwitch.Withdrawal(THIS_CONTRACT, ONE_THOUSAND);
+        vm.expectEmit(true, true, true, true);
+        emit DeadMansSwitch.Withdrawal(NON_CONTRACT_USER, ONE_THOUSAND);
         deadMansSwitch.withdraw(ONE_THOUSAND);
     }
 
