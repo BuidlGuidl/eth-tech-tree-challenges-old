@@ -15,7 +15,7 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        EthStreaming ethStreaming = new EthStreaming();
+        EthStreaming ethStreaming = new EthStreaming(2592000);
         console.logString(
             string.concat(
                 "Challenge deployed at: ",

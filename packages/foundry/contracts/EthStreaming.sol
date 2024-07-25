@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {console2} from "forge-std/console2.sol";
@@ -33,7 +33,7 @@ contract EthStreaming is Ownable {
     // State Variables
     ///////////////////
     mapping(address => StreamConfig) private streamRegistry;
-    uint256 public immutable FREQUENCY = 2592000; // How long until stream is fully unlocked after last withdrawal
+    uint256 public immutable FREQUENCY; // How long until stream is fully unlocked after last withdrawal
 
     ///////////////////
     // Events
@@ -58,7 +58,14 @@ contract EthStreaming is Ownable {
     ///////////////////
     // Functions
     ///////////////////
-    constructor() {}
+    /**
+     * @dev The constructor sets the frequency for the stream
+     * Requirements:
+     * - Set FREQUENCY to _frequency
+     */
+    constructor(uint _frequency) {
+        
+    }
 
     ///////////////////
     // External Functions

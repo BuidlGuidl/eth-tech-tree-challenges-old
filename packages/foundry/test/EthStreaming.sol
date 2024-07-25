@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.26;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {EthStreaming} from "contracts/EthStreaming.sol";
+import {EthStreaming} from "../contracts/EthStreaming.sol";
 
 contract EthStreamingTest is Test {
     EthStreaming ethStreaming;
@@ -19,7 +19,7 @@ contract EthStreamingTest is Test {
      */
     function setUp() public {
         // Deploy the contract
-        ethStreaming = new EthStreaming();
+        ethStreaming = new EthStreaming(FREQUENCY);
         // Fund the contract
         (bool success, ) = payable(ethStreaming).call{value: STARTING_BALANCE}(
             ""
@@ -110,11 +110,14 @@ contract EthStreamingTest is Test {
     function testValidAccountPartialWithdrawal() public {
         vm.prank(ALICE);
         ethStreaming.maxWithdraw();
+        uint aliceBalanceBefore = address(ALICE).balance;
         vm.roll(10);
         uint256 timePassed = 100000000;
         vm.warp(STARTING_TIMESTAMP + timePassed);
         vm.prank(ALICE);
         ethStreaming.maxWithdraw();
+        uint aliceBalanceAfter = address(ALICE).balance;
+        assertGt(aliceBalanceAfter, aliceBalanceBefore);
     }
 
     /**
