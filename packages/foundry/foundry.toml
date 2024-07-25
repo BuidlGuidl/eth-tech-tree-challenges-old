@@ -3,6 +3,8 @@ src = 'contracts'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
+solc_version='0.8.26'
+ignored_warnings_from = ["node_modules", "lib", "test"]
 
 [rpc_endpoints]
 default_network = "http://127.0.0.1:8545"
