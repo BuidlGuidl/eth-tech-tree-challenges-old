@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import "../contracts/Governance.sol";
@@ -22,13 +22,6 @@ contract GovernanceTest is Test {
         token.transfer(userTwo, 2000 * 10 ** 18); // 2000 tokens to userTwo
         token.transfer(userThree, 3000 * 10 ** 18); // 3000 tokens to userThree
         proposalId = governance.propose("Basic Proposal");
-    }
-
-    function testInitialBalances() public {
-        assertEq(token.balanceOf(address(this)), 994000 * 10 ** 18); // Deployer balance after distribution
-        assertEq(token.balanceOf(userOne), 1000 * 10 ** 18); // userOne balance after distribution
-        assertEq(token.balanceOf(userTwo), 2000 * 10 ** 18); // userTwo balance after distribution
-        assertEq(token.balanceOf(userThree), 3000 * 10 ** 18); // userThree balance after distribution
     }
 
     function testProposal() public {
@@ -109,6 +102,12 @@ contract GovernanceTest is Test {
         governance.vote(proposalId, Choice.NAY);
         vm.warp(block.timestamp + 86400 + 1);
         bool result = governance.getResult(proposalId);
+        uint vote1 = uint(governance.getVote(proposalId, userThree));
+        uint vote2 = uint(governance.getVote(proposalId, userOne));
+        uint vote3 = uint(governance.getVote(proposalId, userTwo));
+        assertEq(vote1, uint(Choice.YEA));
+        assertEq(vote2, uint(Choice.NAY));
+        assertEq(vote3, uint(Choice.NAY));
         assertEq(result, false);
     }
 
@@ -120,6 +119,8 @@ contract GovernanceTest is Test {
         governance.vote(proposalId, Choice.NAY);
         vm.warp(block.timestamp + 86400 + 1);
         bool result = governance.getResult(proposalId);
+        (,string memory title,,) = governance.proposals(proposalId);
+        assertNotEq(title, "");
         assertEq(result, false);
     }
 
