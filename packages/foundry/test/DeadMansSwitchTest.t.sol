@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import "../contracts/DeadMansSwitch.sol";
@@ -29,6 +29,12 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.setCheckInInterval(INTERVAL);
         (, , uint checkInterval) = deadMansSwitch.users(THIS_CONTRACT);
         assertEq(checkInterval, INTERVAL);
+    }
+
+    // Test setting the check-in interval to 0
+    function testSetCheckInIntervalWhenZero() public {
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.IntervalNotSet.selector)));
+        deadMansSwitch.setCheckInInterval(0);
     }
 
     // Test the check-in functionality
@@ -63,6 +69,12 @@ contract DeadMansSwitchTest is Test {
         );
     }
 
+    // Test removing a beneficiary
+    function testRemoveBeneficiaryWhenBeneficiaryDoesntExist() public {
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.BeneficiaryDoesNotExist.selector)));
+        deadMansSwitch.removeBeneficiary(BENEFICIARY_1);
+    }
+
     // Test withdrawing funds by the user
     function testWithdraw() public {
         vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
@@ -71,6 +83,30 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.withdraw(ONE_THOUSAND);
         (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
         assertEq(balance, 0);
+    }
+
+    // Test withdrawing funds by the user
+    function testWithdrawInsufficientBalance() public {
+        vm.deal(NON_CONTRACT_USER, ONE_THOUSAND);
+        vm.startPrank(NON_CONTRACT_USER);
+        deadMansSwitch.deposit{value: ONE_THOUSAND}();
+        (uint balance, , ) = deadMansSwitch.users(NON_CONTRACT_USER);
+        assertEq(balance, ONE_THOUSAND);
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.InsufficientBalance.selector)));
+        deadMansSwitch.withdraw(ONE_THOUSAND + 1);
+        (uint balance2, , ) = deadMansSwitch.users(NON_CONTRACT_USER);
+        assertEq(balance2, ONE_THOUSAND);
+    }
+
+    // Test withdrawing funds by the user
+    function testWithdrawTransferFailed() public {
+        deadMansSwitch.deposit{value: ONE_THOUSAND}();
+        (uint balance, , ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(balance, ONE_THOUSAND);
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.TransferFailed.selector)));
+        deadMansSwitch.withdraw(ONE_THOUSAND);
+        (uint balance2, , ) = deadMansSwitch.users(THIS_CONTRACT);
+        assertEq(balance2, ONE_THOUSAND);
     }
 
     // Test withdrawing funds by a beneficiary after the interval has passed
@@ -92,13 +128,36 @@ contract DeadMansSwitchTest is Test {
         assertEq(balance, 0);
     }
 
+        // Test withdrawing funds by a beneficiary that cannot receive ether
+    function testWithdrawAsBeneficiaryTransferFailed() public {
+        vm.deal(BENEFICIARY_1, ONE_THOUSAND);
+        vm.startPrank(BENEFICIARY_1);
+        deadMansSwitch.deposit{value: ONE_THOUSAND}();
+        deadMansSwitch.setCheckInInterval(INTERVAL);
+        // Adding THIS_CONTRACT as a beneficiary since it can't receive ether
+        deadMansSwitch.addBeneficiary(THIS_CONTRACT);
+        assertEq(
+            deadMansSwitch.beneficiaryLookup(BENEFICIARY_1, THIS_CONTRACT),
+            true
+        );
+        vm.warp(block.timestamp + INTERVAL + 1);
+        vm.startPrank(THIS_CONTRACT);
+        uint initialBalance = address(THIS_CONTRACT).balance;
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.TransferFailed.selector)));
+        deadMansSwitch.withdrawAsBeneficiary(BENEFICIARY_1);
+        uint finalBalance = address(THIS_CONTRACT).balance;
+        assertEq(finalBalance, initialBalance);
+        (uint balance, , ) = deadMansSwitch.users(BENEFICIARY_1);
+        assertEq(balance, ONE_THOUSAND);
+    }
+
     // Test that non-beneficiaries cannot withdraw funds
     function testWithdrawAsNonBeneficiary() public {
         deadMansSwitch.deposit{value: ONE_THOUSAND}();
         deadMansSwitch.setCheckInInterval(INTERVAL);
         vm.warp(block.timestamp + INTERVAL + 1);
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.UnauthorizedCaller.selector)));
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
 
@@ -108,7 +167,7 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.setCheckInInterval(INTERVAL);
         vm.warp(block.timestamp + INTERVAL - 1);
         vm.startPrank(NON_CONTRACT_USER);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.CheckInNotLapsed.selector)));
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
 
@@ -119,20 +178,20 @@ contract DeadMansSwitchTest is Test {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
         vm.warp(block.timestamp + INTERVAL - 1);
         vm.startPrank(BENEFICIARY_1);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.CheckInNotLapsed.selector)));
         deadMansSwitch.withdrawAsBeneficiary(THIS_CONTRACT);
     }
 
     //Test  if user is already a beneficiary
     function testAddBeneficiaryTwice() public {
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.BeneficiaryAlreadyExists.selector)));
         deadMansSwitch.addBeneficiary(BENEFICIARY_1);
     }
 
     //Test for zero address
     function testZeroAddress() public {
-        vm.expectRevert();
+        vm.expectRevert(bytes(abi.encodeWithSelector(DeadMansSwitch.InvalidAddress.selector)));
         deadMansSwitch.addBeneficiary(address(0));
     }
 
