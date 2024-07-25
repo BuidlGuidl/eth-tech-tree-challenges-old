@@ -1,14 +1,14 @@
-# Template For Challenge - ETH Tech Tree
-*--Change the above "Template For Challenge" to the challenge name--*
-*--Add a paragraph sized story that pulls in the challenger to their mission--*
+# ETH Streaming Challenge - ETH Tech Tree
 
-
-*--End of story section--*
+In a world where asset allocation mechanisms have grown stale, a visionary group of technologists known as **_The StreamWeavers_** emerges. Their mission is to pioneer novel means of distributing capital that incentivize creativity and coordination. As a core developer for **_The StreamWeavers_**, you are tasked with forging the smart contracts that will allow this new system to flourish and ensure that everyone can manage their digital assets freely.
 
 ## Contents
-- [Requirements](#requirements)
-- [Start Here](#start-here)
-- [Challenge Description](#challenge-description)
+
+- [ETH Streaming Challenge - ETH Tech Tree](#eth-streaming-challenge---eth-tech-tree)
+  - [Contents](#contents)
+  - [Requirements](#requirements)
+  - [Start Here](#start-here)
+  - [Challenge Description](#challenge-description)
 
 ## Requirements
 
@@ -22,37 +22,38 @@ Before you begin, you need to install the following tools:
 __For Windows users we highly recommend using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) or Git Bash as your terminal app.__
 
 ## Start Here
+
 Run the following commands in your terminal:
+
 ```
 yarn install
 foundryup
 ```
 
 ## Challenge Description
-*--Edit this section--*
-Write challenge description here...
 
-Here are some helpful references:
-*Replace with real resource links if any*
-- [one](buidlguidl.com)
-- [two](buidlguidl.com)
-- [three](buidlguidl.com)
+Amidst a backdrop where centralized control over capital resouces stifles innovation and freedom, your challenge is to write a smart contract named "EthStreaming". This contract will empower authorized users to manage Ethereum assets in a decentralized manner—ensuring that the flow of resources is as continuous and uninterrupted as the ideals we uphold. Designated accounts will be permitted to withdraw predefined amounts of ETH, dictated by the passage of time since their last withdrawal.
 
-*--End of challenge specific section--*
+As the architect, you will start this endeavor in `packages/foundry/contracts/EthStreaming.sol` where you will craft a new paradigm where freedom and resources flow hand in hand.
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
 
 When you think you are done run `yarn foundry:test` to run a set of tests against your code. If all your tests pass then you are good to go! If some are returning errors then you might find it useful to run the command with the extra logging verbosity flag `-vvvv` (`yarn foundry:test -vvvv`) as this will show you very detailed information about where tests are failing. You can also use the `--match-test "TestName"` flag to only run a single test. Of course you can chain both to include a higher verbosity and only run a specific test by including both flags `yarn foundry:test -vvvv --match-test "TestName"`. You will also see we have included an import of console2.sol which allows you to use `console.log()` type functionality inside your contracts to know what a value is at a specific time of execution. You can read more about how to use that at [FoundryBook](https://book.getfoundry.sh/reference/forge-std/console-log).
 
 For a more "hands on" approach you can try testing your contract with the provided front end interface by running the following:
+
 ```
 yarn chain
 ```
+
 in a second terminal deploy your contract:
+
 ```
 yarn deploy
 ```
+
 in a third terminal start the NextJS front end:
+
 ```
 yarn start
 ```
