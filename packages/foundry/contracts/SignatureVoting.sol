@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 //import { console2 } from "forge-std/console2.sol";
 
-// Vote (signedMessage)
 
 contract SignatureVoting {
 
@@ -12,8 +11,7 @@ contract SignatureVoting {
     }
 
     // Create a way to track if someone has voted on a proposal already
-    // Prevents duplicate votes
-    mapping(address => mapping(proposalId => bool)) internal voted;
+    mapping(address => mapping(uint256 => bool)) internal voted;
 
     // A storage array of Proposal structs
     Proposal[] public proposals;
@@ -65,28 +63,25 @@ contract SignatureVoting {
         // implicitly return (r, s, v)
     }
 
-    // function decode (bytes32 signedMessage) internal returns(uint256) {
-
-    // }
-
-    // Vote on Proposal
-    function vote (bytes32 signedMessage, bytes memory signature) external {
+    // Create a function to vote on a proposal
+    function vote (bytes32 signedMessage, bytes memory signature, uint256 proposalId) external {
         // Get the address that signed the message
         // Not using msg.sender because the signer may not have sent the transaction
         address voter = recoverSigner(signedMessage, signature);
 
-        // ToDo: Get proposalId from signedMessage
-        uint256 proposalId = 0;
+        // Prevent duplicate votes from voter
+        require(voted[voter][proposalId] == false);
 
-        // Check if voter has voted
-        require(
-            voted[voter][proposalId] == false;
-        );
-
-        // Increase proposal vote
+        // Increase by one vote for the proposal
         proposals[proposalId].voteCount += 1;
 
         // Record that voter has voted for proposal
         voted[voter][proposalId] == true;
+    }
+
+    // Create a function to get name of a proposal by proposalId
+    function getProposalName (uint256 proposalId) public returns(bytes32) {
+        // Todo: May need work, syntax is probably wrong
+        return proposals[proposalId][name];
     }
 }
