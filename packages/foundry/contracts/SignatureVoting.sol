@@ -6,7 +6,7 @@ pragma solidity >=0.8.0 <0.9.0;
 contract SignatureVoting {
 
     struct Proposal {
-        bytes32 name;
+        string name;
         uint256 voteCount;
     }
 
@@ -17,7 +17,7 @@ contract SignatureVoting {
     Proposal[] public proposals;
 
     // Creates a proposal
-    function createProposal (bytes32 proposalName) external {
+    function createProposal (string proposalName) external {
         proposals.push(Proposal({
             name: proposalName,
             voteCount: 0
@@ -80,8 +80,8 @@ contract SignatureVoting {
     }
 
     // Create a function to get name of a proposal by proposalId
-    function getProposalName (uint256 proposalId) public returns(bytes32) {
-        // Todo: May need work, syntax is probably wrong
-        return proposals[proposalId][name];
+    function getProposalName (uint256 _proposalId) public returns(string) {
+        Proposal storage proposal = proposals[_proposalId];
+        return proposal.name;
     }
 }
