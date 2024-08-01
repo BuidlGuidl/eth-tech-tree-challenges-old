@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "../contracts/SignatureVoting.sol";
 
-contract ChallengeTest is Test {
+contract SignatureVotingTest is Test {
     // Declare variables
     SignatureVoting public signatureVoting;
 
@@ -31,9 +31,9 @@ contract ChallengeTest is Test {
 
     // Users sign messages, they can also send the transaction, however it's not required
     // ToDo: Create messages
-    bytes32 hashOne = keccak256(messageOne);
-    bytes32 hashTwo = keccak256(messageTwo);
-    bytes32 hashThree = keccak256(messageThree);
+    bytes32 hashOne = keccak256(abi.encodePacked(messageOne));
+    bytes32 hashTwo = keccak256(abi.encodePacked(messageTwo));
+    bytes32 hashThree = keccak256(abi.encodePacked(messageThree));
 
     // Deploy contract, no constructor
     // Create proposals
@@ -44,7 +44,7 @@ contract ChallengeTest is Test {
         signatureVoting.createProposal(proposalThree);
     }
 
-    // Test initial proposals
+    // Test proposals were created
     function testProposalsCreated() public {
         assertEq(signatureVoting.getProposalName(0), proposalOne);
         assertEq(signatureVoting.getProposalName(1), proposalTwo);
@@ -56,22 +56,19 @@ contract ChallengeTest is Test {
         // Sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(onePk, hashOne);
         // Pack the message
-        bytes memory signedMessage = abi.encodePacked(r, s, v);
+        bytes32 signedMessage = keccak256(abi.encodePacked(r, s, v));
         // Call smart contract
         signatureVoting.vote(signedMessage, hashOne, messageOne);
     }
 
     // Test that voters voted
     function testQueryVoterVoted() public {
-        assertTrue(signatureVoting.queryVoted(userOne, proposalOne), "Voter did not vote for this proposal");
+        assertTrue(signatureVoting.queryVoted(userOne, messageOne), "Voter did not vote for this proposal");
     }
 
     // Test for duplicate votes for single proposal
     function testDuplicateVoting() public {
         vm.expectRevert(bytes("Voter already voted for this proposal!"));
-        (bool revertsAsExpected, ) = signatureVoting.queryVoted(userOne, proposalOne);
-        assertTrue(revertsAsExpected, "expectRevert: call did not revert");
+        signatureVoting.queryVoted(userOne, messageOne);
     }
-
-
 }

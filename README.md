@@ -27,7 +27,7 @@ foundryup
 
 ## Challenge Description
 *--Edit this section--*
-Write challenge description here...
+Voters can sign messages off chain. The sender of a 'vote' transaction may not be the wallet address that signed the message. So, we need a way to get the signer of a signed message in order to record their vote for the correct proposal.
 
 Here are some helpful references:
 *Replace with real resource links if any*

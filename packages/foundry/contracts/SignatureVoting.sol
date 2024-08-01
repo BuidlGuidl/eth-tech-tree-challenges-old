@@ -16,7 +16,7 @@ contract SignatureVoting {
     Proposal[] public proposals;
 
     // Creates a proposal
-    function createProposal (string proposalName) external {
+    function createProposal (string memory proposalName) external {
         proposals.push(Proposal({
             name: proposalName,
             voteCount: 0
@@ -63,16 +63,16 @@ contract SignatureVoting {
     }
 
     // Create a function to vote on a proposal
-    function vote (bytes32 signedMessage, bytes memory hashedMessage, uint256 proposalId) external {
+    function vote (bytes32 signedMessage, bytes32 hashedMessage, uint256 proposalId) public {
         // Get the address that signed the message
         // Not using msg.sender because the signer may not have sent the transaction
-        address voter = recoverSigner(signedMessage, hashedMessage);
+        address voter = recoverSigner(signedMessage, abi.encodePacked(hashedMessage));
 
         // Prevent duplicate votes from voter
         require(voted[voter][proposalId] == false, "Voter already voted for this proposal!");
 
         // Verify hashed message is same as message
-        require hashedMessage = keccak256(proposalId);
+        require(hashedMessage == keccak256(abi.encodePacked(proposalId)), "Vote: Messages don't match!");
 
         // Increase by one vote for the proposal
         proposals[proposalId].voteCount += 1;
@@ -81,12 +81,13 @@ contract SignatureVoting {
         voted[voter][proposalId] == true;
     }
 
+    // Query if voter voted on a proposal
     function queryVoted (address voter, uint256 proposalId) public returns(bool) {
         return voted[voter][proposalId];
     }
 
     // Create a function to get name of a proposal by proposalId
-    function getProposalName (uint256 _proposalId) public returns(string) {
+    function getProposalName (uint256 _proposalId) public returns(string memory) {
         Proposal storage proposal = proposals[_proposalId];
         return proposal.name;
     }
