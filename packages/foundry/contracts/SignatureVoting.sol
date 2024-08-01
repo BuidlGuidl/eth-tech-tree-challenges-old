@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 //import { console2 } from "forge-std/console2.sol";
 
-
 contract SignatureVoting {
 
     struct Proposal {
@@ -64,19 +63,26 @@ contract SignatureVoting {
     }
 
     // Create a function to vote on a proposal
-    function vote (bytes32 signedMessage, bytes memory signature, uint256 proposalId) external {
+    function vote (bytes32 signedMessage, bytes memory hashedMessage, uint256 proposalId) external {
         // Get the address that signed the message
         // Not using msg.sender because the signer may not have sent the transaction
-        address voter = recoverSigner(signedMessage, signature);
+        address voter = recoverSigner(signedMessage, hashedMessage);
 
         // Prevent duplicate votes from voter
-        require(voted[voter][proposalId] == false);
+        require(voted[voter][proposalId] == false, "Voter already voted for this proposal!");
+
+        // Verify hashed message is same as message
+        require hashedMessage = keccak256(proposalId);
 
         // Increase by one vote for the proposal
         proposals[proposalId].voteCount += 1;
 
         // Record that voter has voted for proposal
         voted[voter][proposalId] == true;
+    }
+
+    function queryVoted (address voter, uint256 proposalId) public returns(bool) {
+        return voted[voter][proposalId];
     }
 
     // Create a function to get name of a proposal by proposalId
