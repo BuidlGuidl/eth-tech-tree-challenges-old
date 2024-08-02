@@ -1,9 +1,8 @@
-# Template For Challenge - ETH Tech Tree
-*--Change the above "Template For Challenge" to the challenge name--*
-*--Add a paragraph sized story that pulls in the challenger to their mission--*
+# Signature Voting - ETH Tech Tree
 
+You're colonizing Mars and you have the opportunity to create a new society. Since it's known that you have some Solidity skills, the rest of your cohort asked you to code a 'trustless' voting system to make decisions about how this new world will be designed and governed. You need exactly one vote per wallet address per proposal. Imagine that each colonizer is issued exactly one wallet address so that there is no duplicate voting.
 
-*--End of story section--*
+Alice was working on some code for this voting system but didn't finish and decided to stay on Earth. Finish Alice's signature voting code.
 
 ## Contents
 - [Requirements](#requirements)
@@ -28,7 +27,7 @@ foundryup
 
 ## Challenge Description
 *--Edit this section--*
-Write challenge description here...
+Voters can sign messages off chain. The sender of a 'vote' transaction may not be the wallet address that signed the message. So, we need a way to get the signer of a signed message in order to record their vote for the correct proposal.
 
 Here are some helpful references:
 *Replace with real resource links if any*
