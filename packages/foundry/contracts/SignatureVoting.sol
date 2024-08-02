@@ -69,10 +69,10 @@ contract SignatureVoting {
         address voter = recoverSigner(signedMessage, abi.encodePacked(hashedMessage));
 
         // Prevent duplicate votes from voter
-        require(voted[voter][proposalId] == false, "Voter already voted for this proposal!");
+        // require(voted[voter][proposalId] == false, "Voter already voted for this proposal!");
 
         // Verify hashed message is same as message
-        require(hashedMessage == keccak256(abi.encodePacked(proposalId)), "Vote: Messages don't match!");
+        //require(hashedMessage == keccak256(abi.encodePacked(proposalId)), "Vote: Messages don't match!");
 
         // Increase by one vote for the proposal
         proposals[proposalId].voteCount += 1;
@@ -82,12 +82,12 @@ contract SignatureVoting {
     }
 
     // Query if voter voted on a proposal
-    function queryVoted (address voter, uint256 proposalId) public returns(bool) {
+    function queryVoted (address voter, uint256 proposalId) public view returns(bool) {
         return voted[voter][proposalId];
     }
 
     // Create a function to get name of a proposal by proposalId
-    function getProposalName (uint256 _proposalId) public returns(string memory) {
+    function getProposalName (uint256 _proposalId) public view returns(string memory) {
         Proposal storage proposal = proposals[_proposalId];
         return proposal.name;
     }

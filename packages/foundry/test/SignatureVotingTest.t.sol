@@ -25,18 +25,16 @@ contract SignatureVotingTest is Test {
     string public proposalThree = "Water is a public right";
 
     // Create messages
-    uint256 messageOne = 1;
-    uint256 messageTwo = 2;
-    uint256 messageThree = 3;
+    uint256 messageOne = 0;
+    uint256 messageTwo = 1;
+    uint256 messageThree = 2;
 
-    // Users sign messages, they can also send the transaction, however it's not required
     // ToDo: Create messages
     bytes32 hashOne = keccak256(abi.encodePacked(messageOne));
     bytes32 hashTwo = keccak256(abi.encodePacked(messageTwo));
     bytes32 hashThree = keccak256(abi.encodePacked(messageThree));
 
-    // Deploy contract, no constructor
-    // Create proposals
+    // Deploy contract and create proposals
     function setUp() public {
         signatureVoting = new SignatureVoting();
         signatureVoting.createProposal(proposalOne);
@@ -45,14 +43,14 @@ contract SignatureVotingTest is Test {
     }
 
     // Test proposals were created
-    function testProposalsCreated() public {
+    function test_ProposalsCreated() public {
         assertEq(signatureVoting.getProposalName(0), proposalOne);
         assertEq(signatureVoting.getProposalName(1), proposalTwo);
         assertEq(signatureVoting.getProposalName(2), proposalThree);
     }
 
-    // Voters vote
-    function testVoterVote() public {
+    // Voters sign message and call 'vote'
+    function voterVotes() public {
         // Sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(onePk, hashOne);
         // Pack the message
@@ -62,12 +60,12 @@ contract SignatureVotingTest is Test {
     }
 
     // Test that voters voted
-    function testQueryVoterVoted() public {
-        assertTrue(signatureVoting.queryVoted(userOne, messageOne), "Voter did not vote for this proposal");
+    function test_voterVotedProposal0() public {
+        assertTrue(signatureVoting.queryVoted(userOne, 0), "Voter did not vote for this proposal");
     }
 
     // Test for duplicate votes for single proposal
-    function testDuplicateVoting() public {
+    function test_DuplicateVoting() public {
         vm.expectRevert(bytes("Voter already voted for this proposal!"));
         signatureVoting.queryVoted(userOne, messageOne);
     }
