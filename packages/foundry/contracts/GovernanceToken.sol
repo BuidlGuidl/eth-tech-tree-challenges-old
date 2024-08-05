@@ -4,52 +4,66 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title Governance Token Contract
+/// @notice This contract is a basic implementation of an ERC20 token with vote delegation functionality
+/// @dev Inherits from OpenZeppelin's ERC20 and Ownable contracts
 contract GovernanceToken is ERC20, Ownable {
-    mapping(address => address) public delegation;
+    mapping(address => address) public delegates;
     mapping(address => uint256) public delegatedVotes;
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    event VotesDelegated(address indexed fromDelegate, address indexed toDelegate, uint256 amount);
+    event VotesUndelegated(address indexed fromDelegate, address indexed toDelegate, uint256 amount);
 
+    constructor() ERC20("Governance Token", "GOV") {
+        _mint(msg.sender, 1000000 * 10**decimals());
+    }
+
+    /// @notice Delegate votes to another address
+    /// @param to The address to delegate votes to
+    /// @dev Ensure `to` is not the same as the caller. Update delegate mappings and move votes.
+    /// @custom:requirements 
+    /// - `to` cannot be the same as the caller.
     function delegate(address to) external {
-        address delegator = msg.sender;
-        uint256 balance = balanceOf(delegator);
+        require(to != msg.sender, "Cannot delegate to self");
 
-        require(balance > 0, "No tokens to delegate");
+        address currentDelegate = delegates[msg.sender];
+        uint256 delegatorBalance = balanceOf(msg.sender);
 
-        if (delegation[delegator] != address(0)) {
-            _undelegate(delegator);
-        }
+        delegates[msg.sender] = to;
+        emit DelegateChanged(msg.sender, currentDelegate, to);
 
-        delegation[delegator] = to;
-        delegatedVotes[to] += balance;
+        _moveDelegates(currentDelegate, to, delegatorBalance);
     }
 
+    /// @notice Undelegate votes, removing the current delegation
+    /// @dev Reset the delegate mapping and move votes back to the caller
+    /// @custom:requirements 
+    /// - The caller must have previously delegated their votes.
     function undelegate() external {
-        address delegator = msg.sender;
-        _undelegate(delegator);
+        address currentDelegate = delegates[msg.sender];
+        uint256 delegatorBalance = balanceOf(msg.sender);
+
+        delegates[msg.sender] = address(0);
+        emit DelegateChanged(msg.sender, currentDelegate, address(0));
+
+        _moveDelegates(currentDelegate, msg.sender, delegatorBalance);
     }
 
-    function _undelegate(address delegator) internal {
-        address currentDelegate = delegation[delegator];
-        uint256 balance = balanceOf(delegator);
-
-        require(currentDelegate != address(0), "No delegation to revoke");
-
-        delegation[delegator] = address(0);
-        delegatedVotes[currentDelegate] -= balance;
-    }
-
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-        address sender = _msgSender();
-
-        if (delegation[sender] != address(0)) {
-            delegatedVotes[delegation[sender]] -= amount;
+    /// @dev Internal function to move delegated votes from one delegate to another
+    /// @param from The address delegating votes from
+    /// @param to The address delegating votes to
+    /// @param amount The number of votes being delegated
+    function _moveDelegates(address from, address to, uint256 amount) internal {
+        if (from != to && amount > 0) {
+            if (from != address(0)) {
+                delegatedVotes[from] -= amount;
+                emit VotesUndelegated(from, to, amount);
+            }
+            if (to != address(0)) {
+                delegatedVotes[to] += amount;
+                emit VotesDelegated(from, to, amount);
+            }
         }
-
-        if (delegation[recipient] != address(0)) {
-            delegatedVotes[delegation[recipient]] += amount;
-        }
-
-        return super.transfer(recipient, amount);
     }
 }

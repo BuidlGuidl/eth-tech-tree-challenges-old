@@ -16,7 +16,7 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        GovernanceToken govToken = new GovernanceToken("Governance Token", "GOV");
+        GovernanceToken govToken = new GovernanceToken();
         console.logString(
             string.concat(
                 "GovernanceToken deployed at: ",
@@ -24,7 +24,7 @@ contract DeployScript is ScaffoldETHDeploy {
             )
         );
 
-        GovernanceContract govContract = new GovernanceContract(address(govToken), 5, 5);
+        GovernanceContract govContract = new GovernanceContract(address(govToken), 5, 5, 5);
         console.logString(
             string.concat(
                 "GovernanceContract deployed at: ",
