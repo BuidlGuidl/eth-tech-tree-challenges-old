@@ -52,7 +52,7 @@ To help you understand the requirements better, consider the following scenario:
 
 Here are some helpful references:
 
-- [one](https://docs.compound.finance/v2/governance/#delegate)
+- [Compound Governance - Delegation](https://docs.compound.finance/v2/governance/#delegate)
 
 
 **Don't change any existing method names** as it will break tests but feel free to add additional methods if it helps you complete the task.
