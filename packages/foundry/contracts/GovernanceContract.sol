@@ -1,13 +1,41 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./GovernanceToken.sol";
 
 /// @title Governance Contract
+/// @author BUIDL GUIDL
 /// @notice This contract handles the governance mechanism including proposal creation and voting
 /// @dev Uses a GovernanceToken for vote delegation
 contract GovernanceContract is Ownable {
+
+    ///////////////////
+    // Errors
+    ///////////////////
+
+    /// @dev Thrown when the caller doesn't have enough votes to create a proposal.
+    error InsufficientVotesToPropose();
+
+    /// @dev Thrown when the voting period for a proposal has ended.
+    error VotingPeriodEnded();
+
+    /// @dev Thrown when the caller has already voted on a proposal.
+    error AlreadyVoted();
+
+    /// @dev Thrown when the caller has no votes available to cast.
+    error NoVotesAvailable();
+
+    /// @dev Thrown when the voting period has not yet ended.
+    error VotingPeriodNotEnded();
+
+    /// @dev Thrown when a proposal does not meet the quorum requirement.
+    error QuorumNotReached();
+
+    ///////////////////
+    // Type Declarations
+    ///////////////////
+
     struct Proposal {
         uint256 id;
         address proposer;
@@ -19,6 +47,10 @@ contract GovernanceContract is Ownable {
         mapping(address => bool) voted;
     }
 
+    ///////////////////
+    // State Variables
+    ///////////////////
+
     GovernanceToken public governanceToken;
     uint256 public proposalCount;
     uint256 public proposalThreshold;
@@ -27,9 +59,17 @@ contract GovernanceContract is Ownable {
 
     mapping(uint256 => Proposal) public proposals;
 
+    ///////////////////
+    // Events
+    ///////////////////
+
     event ProposalCreated(uint256 id, address proposer, string description, uint256 endBlock);
     event Voted(uint256 proposalId, address voter, bool support);
     event ProposalResult(uint256 proposalId, bool passed);
+
+    ///////////////////
+    // Constructor
+    ///////////////////
 
     constructor(
         address _governanceToken,
@@ -43,15 +83,23 @@ contract GovernanceContract is Ownable {
         votingPeriod = _votingPeriod;
     }
 
+    ///////////////////
+    // Public Functions
+    ///////////////////
+
     /// @notice Create a new governance proposal
     /// @param deadline The block number at which voting ends for the proposal
     /// @param description The description of the proposal
-    /// @dev Ensure the proposer has enough votes (including delegated votes) to meet the proposal threshold
-    /// @custom:requirements 
-    /// - The caller's total votes (own + delegated) must meet the proposal threshold.
+    /// @custom:requirements:
+    /// - Should revert with `NotEnoughVotes` if the caller's total votes (own + delegated) do not meet the proposal threshold.
+    /// - Must increment `proposalCount`.
+    /// - Must create a `Proposal` struct with the expected properties (id, proposer, description, endBlock, votesFor, votesAgainst, executed).
+    /// - Must emit `ProposalCreated` with the expected properties (id, proposer, description, endBlock).
     function createProposal(uint256 deadline, string calldata description) external {
         uint256 totalVotes = governanceToken.balanceOf(msg.sender) + governanceToken.delegatedVotes(msg.sender);
-        require(totalVotes >= proposalThreshold, "Not enough votes to create proposal");
+        if (totalVotes < proposalThreshold) {
+            revert NotEnoughVotes();
+        }
 
         proposalCount++;
         Proposal storage proposal = proposals[proposalCount];
@@ -66,18 +114,26 @@ contract GovernanceContract is Ownable {
     /// @notice Vote on an active proposal
     /// @param proposalId The ID of the proposal to vote on
     /// @param support Boolean indicating if the vote is in support of the proposal
-    /// @dev Ensure the voter has not already voted and the proposal is still active
-    /// @custom:requirements 
-    /// - The caller must have votes available (own + delegated).
-    /// - The voting period must not have ended.
-    /// - The caller must not have voted on this proposal before.
+    /// @custom:requirements:
+    /// - Should revert with `VotingPeriodEnded` if the current block is greater than `proposal.endBlock`.
+    /// - Should revert with `AlreadyVoted` if the caller has already voted on this proposal.
+    /// - Should revert with `NotEnoughVotes` if the caller has no votes available (own + delegated).
+    /// - Must update `votesFor` or `votesAgainst` based on the `support` parameter.
+    /// - Must mark the caller as having voted on this proposal.
+    /// - Must emit `Voted` with the expected properties (proposalId, voter, support).
     function vote(uint256 proposalId, bool support) external {
         Proposal storage proposal = proposals[proposalId];
-        require(block.number <= proposal.endBlock, "Voting period has ended");
-        require(!proposal.voted[msg.sender], "Already voted");
+        if (block.number > proposal.endBlock) {
+            revert VotingPeriodEnded();
+        }
+        if (proposal.voted[msg.sender]) {
+            revert AlreadyVoted();
+        }
 
         uint256 votes = governanceToken.balanceOf(msg.sender) + governanceToken.delegatedVotes(msg.sender);
-        require(votes > 0, "No votes available");
+        if (votes == 0) {
+            revert NotEnoughVotes();
+        }
 
         if (support) {
             proposal.votesFor += votes;
@@ -92,14 +148,18 @@ contract GovernanceContract is Ownable {
     /// @notice Show the result of a proposal
     /// @param proposalId The ID of the proposal to show the result for
     /// @return passed Boolean indicating if the proposal passed
-    /// @dev Ensure the proposal has ended and met the quorum requirement
-    /// @custom:requirements 
-    /// - The voting period must have ended.
-    /// - The proposal must have reached quorum.
+    /// @custom:requirements:
+    /// - Should revert with `VotingPeriodNotEnded` if the current block is less than or equal to `proposal.endBlock`.
+    /// - Should revert with `QuorumNotReached` if the total votes (votesFor + votesAgainst) are less than the quorum.
+    /// - Must return `true` if `votesFor` is greater than `votesAgainst`, otherwise return `false`.
     function proposalResult(uint256 proposalId) public view returns (bool passed) {
         Proposal storage proposal = proposals[proposalId];
-        require(block.number > proposal.endBlock, "Voting period has not ended");
-        require(proposal.votesFor + proposal.votesAgainst >= quorum, "Quorum not reached");
+        if (block.number <= proposal.endBlock) {
+            revert VotingPeriodNotEnded();
+        }
+        if (proposal.votesFor + proposal.votesAgainst < quorum) {
+            revert QuorumNotReached();
+        }
 
         return proposal.votesFor > proposal.votesAgainst;
     }
