@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../contracts/Challenge.sol";
+import "../contracts/GovernanceToken.sol";
+import "../contracts/GovernanceContract.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
@@ -15,11 +16,19 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Challenge challenge = new Challenge();
+        GovernanceToken govToken = new GovernanceToken();
         console.logString(
             string.concat(
-                "Challenge deployed at: ",
-                vm.toString(address(challenge))
+                "GovernanceToken deployed at: ",
+                vm.toString(address(govToken))
+            )
+        );
+
+        GovernanceContract govContract = new GovernanceContract(address(govToken), 5, 5, 5);
+        console.logString(
+            string.concat(
+                "GovernanceContract deployed at: ",
+                vm.toString(address(govContract))
             )
         );
         vm.stopBroadcast();
