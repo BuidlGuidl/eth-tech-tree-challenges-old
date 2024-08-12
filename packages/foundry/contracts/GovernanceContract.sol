@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./GovernanceToken.sol";
+import "forge-std/console.sol";
 
 /// @title Governance Contract
 /// @author BUIDL GUIDL
@@ -15,7 +16,7 @@ contract GovernanceContract is Ownable {
     ///////////////////
 
     /// @dev Thrown when the caller doesn't have enough votes to create a proposal.
-    error InsufficientVotesToPropose();
+    error NotEnoughVotes();
 
     /// @dev Thrown when the voting period for a proposal has ended.
     error VotingPeriodEnded();
@@ -90,7 +91,7 @@ contract GovernanceContract is Ownable {
     /// @notice Create a new governance proposal
     /// @param deadline The block number at which voting ends for the proposal
     /// @param description The description of the proposal
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Should revert with `NotEnoughVotes` if the caller's total votes (own + delegated) do not meet the proposal threshold.
     /// - Must increment `proposalCount`.
     /// - Must create a `Proposal` struct with the expected properties (id, proposer, description, endBlock, votesFor, votesAgainst, executed).
@@ -114,7 +115,7 @@ contract GovernanceContract is Ownable {
     /// @notice Vote on an active proposal
     /// @param proposalId The ID of the proposal to vote on
     /// @param support Boolean indicating if the vote is in support of the proposal
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Should revert with `VotingPeriodEnded` if the current block is greater than `proposal.endBlock`.
     /// - Should revert with `AlreadyVoted` if the caller has already voted on this proposal.
     /// - Should revert with `NotEnoughVotes` if the caller has no votes available (own + delegated).
@@ -148,7 +149,7 @@ contract GovernanceContract is Ownable {
     /// @notice Show the result of a proposal
     /// @param proposalId The ID of the proposal to show the result for
     /// @return passed Boolean indicating if the proposal passed
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Should revert with `VotingPeriodNotEnded` if the current block is less than or equal to `proposal.endBlock`.
     /// - Should revert with `QuorumNotReached` if the total votes (votesFor + votesAgainst) are less than the quorum.
     /// - Must return `true` if `votesFor` is greater than `votesAgainst`, otherwise return `false`.
@@ -163,4 +164,15 @@ contract GovernanceContract is Ownable {
 
         return proposal.votesFor > proposal.votesAgainst;
     }
+
+
+    /// @notice Sets the quorum required for proposals to be accepted.
+    /// @dev This function can only be called by the owner of the contract. The quorum is set as a percentage of the total supply of the governance token, which determines the minimum amount of votes required for a proposal to pass.
+    /// @param _quorum The new quorum value to set, expressed in the smallest unit of the governance token. The value should be set considering the token's decimal places.     
+    /// @custom:requirements
+    /// - The caller must be the owner of the contract.
+    function setQuorum(uint256 _quorum) public onlyOwner {
+        quorum = _quorum;
+    }
+
 }

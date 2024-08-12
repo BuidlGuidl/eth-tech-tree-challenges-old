@@ -49,7 +49,7 @@ contract GovernanceToken is ERC20, Ownable {
 
     /// @notice Delegate votes to another address
     /// @param to The address to delegate votes to
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Should revert with `SelfDelegationNotAllowed` if `to` is the same as the caller.
     /// - Must update the `delegates` mapping with the new delegate address.
     /// - Must call `_moveDelegates` to transfer the caller's vote balance from the current delegate (if any) to the new delegate.
@@ -69,7 +69,7 @@ contract GovernanceToken is ERC20, Ownable {
     }
 
     /// @notice Undelegate votes, removing the current delegation
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Should revert with `NoDelegationToRevoke` if the caller has not previously delegated their votes.
     /// - Must reset the `delegates` mapping to address(0).
     /// - Must call `_moveDelegates` to transfer the caller's vote balance from the current delegate back to the caller.
@@ -81,11 +81,10 @@ contract GovernanceToken is ERC20, Ownable {
         }
 
         uint256 delegatorBalance = balanceOf(msg.sender);
-
-        delegates[msg.sender] = address(0);
         emit DelegateChanged(msg.sender, currentDelegate, address(0));
 
         _moveDelegates(currentDelegate, msg.sender, delegatorBalance);
+        delegates[msg.sender] = address(0);
     }
 
     ///////////////////
@@ -96,7 +95,7 @@ contract GovernanceToken is ERC20, Ownable {
     /// @param from The address delegating votes from
     /// @param to The address delegating votes to
     /// @param amount The number of votes being delegated
-    /// @custom:requirements:
+    /// @custom:requirements
     /// - Must decrement `delegatedVotes[from]` by `amount` if `from` is not address(0).
     /// - Must increment `delegatedVotes[to]` by `amount` if `to` is not address(0).
     /// - Must emit `VotesUndelegated` or `VotesDelegated` with the expected properties (fromDelegate, toDelegate, amount).
